@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MatchRecordResource\Pages;
 
 use App\Filament\Resources\MatchRecordResource;
 use App\Filament\Resources\MatchRecordResource\Concerns\SyncsMatchSets;
+use App\Models\RankingList;
 use App\Services\EloService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -37,7 +38,7 @@ class EditMatchRecord extends EditRecord
             ->values()
             ->all();
 
-        return $data;
+        return array_merge($data, MatchRecordResource::doublesPlayerFillFromRecord($this->record));
     }
 
     /**
@@ -46,7 +47,13 @@ class EditMatchRecord extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return $this->extractSetsFromFormData($data);
+        $data = $this->extractSetsFromFormData($data);
+        $data = MatchRecordResource::resolveDoublesSides($data, $this->form->getRawState());
+
+        $list = RankingList::find($data['ranking_list_id'] ?? null);
+        $data['match_type'] = $list?->type ?? ($data['match_type'] ?? 'singles');
+
+        return $data;
     }
 
     protected function afterSave(): void

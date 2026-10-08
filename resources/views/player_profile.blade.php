@@ -3,7 +3,16 @@
 @section('title', $user->name . ' - Player Profile')
 
 @section('content')
-<div class="space-y-5 lg:space-y-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+@php
+    $matchListIds = $matches->pluck('ranking_list_id')->values();
+@endphp
+<div
+    class="space-y-5 lg:space-y-8"
+    x-data="playerProfile(@js($eloChartData), @js($matchListIds))"
+    x-init="initChart()"
+>
     
     <!-- Player Profile Card Header -->
     <div class="surface-card rounded-2xl p-5 lg:p-8 relative overflow-hidden">
@@ -47,15 +56,71 @@
         @endif
     </div>
 
+    <!-- Ranking list pills -->
+    @if($availableLists->isNotEmpty())
+        <div class="flex flex-wrap gap-2">
+            <button
+                type="button"
+                @click="selectList(null)"
+                :class="selectedListId === null ? 'pill-active' : 'pill-idle'"
+                class="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition border"
+            >
+                All Rankings
+            </button>
+            @foreach($availableLists as $list)
+                <button
+                    type="button"
+                    @click="selectList({{ $list->id }})"
+                    :class="selectedListId === {{ $list->id }} ? 'pill-active' : 'pill-idle'"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition border"
+                >
+                    {{ $list->title }}
+                </button>
+            @endforeach
+        </div>
+    @endif
+
+    <!-- Rating history chart -->
+    <div class="surface-card rounded-2xl p-4 lg:p-5" x-show="hasChartData" x-cloak>
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+                <h3 class="text-xs uppercase tracking-wider text-muted font-semibold">Rating History</h3>
+                <p class="text-[11px] text-muted mt-0.5" x-text="chartSubtitle"></p>
+            </div>
+            <span
+                class="px-2.5 py-1 rounded-lg bg-secondary-soft text-secondary font-heading font-bold text-sm border border-secondary"
+                x-show="selectedCurrentElo !== null"
+                x-text="selectedCurrentElo + ' ELO'"
+            ></span>
+        </div>
+        <div class="relative h-48 lg:h-56">
+            <canvas id="elo-rating-chart"></canvas>
+        </div>
+    </div>
+
     <div class="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start space-y-5 lg:space-y-0">
         <div class="space-y-3">
             <h3 class="text-xs uppercase tracking-wider text-muted font-semibold px-1">ELO Ratings Across Lists</h3>
             
             <div class="grid grid-cols-1 gap-2.5">
                 @forelse($rankings as $r)
-                    <div class="surface-card rounded-2xl p-4 flex items-center justify-between gap-3">
+                    <div
+                        class="surface-card rounded-2xl p-4 flex items-center justify-between gap-3"
+                        x-show="selectedListId === null || selectedListId === {{ $r->ranking_list_id }}"
+                        x-cloak
+                    >
                         <div class="min-w-0">
                             <span class="text-xs font-medium text-secondary block truncate">{{ $r->rankingList?->title }}</span>
+                            @if($r->rankingList?->type === 'doubles')
+                                <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase border {{ $r->isPair() ? 'bg-secondary-soft text-secondary border-secondary' : 'bg-primary-soft text-primary border-primary' }}">
+                                        {{ $r->isPair() ? 'Pair' : 'Individual' }}
+                                    </span>
+                                    @if($r->isPair())
+                                        <span class="text-[10px] text-muted truncate">{{ $r->display_name }}</span>
+                                    @endif
+                                </div>
+                            @endif
                             <div class="text-xs text-muted flex items-center gap-2 mt-1 flex-wrap">
                                 <span>Matches: <strong class="text-ink">{{ $r->matches_played }}</strong></span>
                                 <span>•</span>
@@ -81,18 +146,25 @@
         </div>
 
         <div class="space-y-3">
-            <h3 class="text-xs uppercase tracking-wider text-muted font-semibold px-1">Recent Matches</h3>
+            <div class="flex items-center justify-between gap-2 px-1">
+                <h3 class="text-xs uppercase tracking-wider text-muted font-semibold">Recent Matches</h3>
+                <span class="text-[10px] text-muted" x-text="visibleMatchCountLabel"></span>
+            </div>
 
             <div class="space-y-2.5">
                 @forelse($matches as $m)
                     @php
-                        $isSide1 = $m->side1Ranking?->user_id === $user->id;
+                        $isSide1 = $m->side1Ranking?->user_id === $user->id || $m->side1Ranking?->player2_id === $user->id;
                         $userSets = $isSide1 ? $m->side1_sets_won : $m->side2_sets_won;
                         $oppSets = $isSide1 ? $m->side2_sets_won : $m->side1_sets_won;
                         $opponentName = $isSide1 ? $m->side2Ranking?->display_name : $m->side1Ranking?->display_name;
                         $wonMatch = ($isSide1 && $m->winner_side === 1) || (!$isSide1 && $m->winner_side === 2);
                     @endphp
-                    <div class="surface-card rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div
+                        class="surface-card rounded-xl p-3 flex items-center justify-between gap-3"
+                        x-show="selectedListId === null || selectedListId === {{ $m->ranking_list_id }}"
+                        x-cloak
+                    >
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-7 h-7 shrink-0 rounded-lg font-heading font-bold text-xs flex items-center justify-center {{ $wonMatch ? 'bg-primary-soft text-primary border border-primary' : 'bg-surface text-muted border border-theme' }}">
                                 {{ $wonMatch ? 'W' : 'L' }}
@@ -117,9 +189,185 @@
                         No matches played yet.
                     </div>
                 @endforelse
+
+                <div
+                    class="surface-card rounded-xl p-4 text-center text-xs text-muted"
+                    x-show="{{ $matches->isNotEmpty() ? 'true' : 'false' }} && !hasVisibleMatches"
+                    x-cloak
+                >
+                    No matches in this ranking yet.
+                </div>
             </div>
         </div>
     </div>
 
 </div>
+
+<script>
+    function playerProfile(chartSeries, matchListIds) {
+        const palette = [
+            getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#DC143C',
+            getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim() || '#003893',
+            '#0d9488',
+            '#ca8a04',
+            '#7c3aed',
+            '#ea580c',
+        ];
+
+        // Keep Chart.js outside Alpine's reactive proxy — proxied chart instances
+        // update data correctly but often fail to redraw the canvas.
+        let eloChart = null;
+
+        return {
+            selectedListId: null,
+            chartSeries: chartSeries || [],
+            matchListIds: matchListIds || [],
+
+            get hasChartData() {
+                return this.chartSeries.some((s) => s.points && s.points.length > 0);
+            },
+
+            get selectedSeries() {
+                if (this.selectedListId === null) {
+                    return this.chartSeries;
+                }
+                return this.chartSeries.filter((s) => Number(s.listId) === Number(this.selectedListId));
+            },
+
+            get selectedCurrentElo() {
+                if (this.selectedListId === null) {
+                    return null;
+                }
+                const series = this.chartSeries.find((s) => Number(s.listId) === Number(this.selectedListId));
+                return series ? series.currentElo : null;
+            },
+
+            get chartSubtitle() {
+                if (this.selectedListId === null) {
+                    return this.chartSeries.length > 1
+                        ? 'Comparing ELO across all ranking lists'
+                        : (this.chartSeries[0]?.title || 'ELO over time');
+                }
+                return this.selectedSeries[0]?.title || 'ELO over time';
+            },
+
+            get visibleMatchCount() {
+                if (this.selectedListId === null) {
+                    return this.matchListIds.length;
+                }
+                return this.matchListIds.filter((id) => Number(id) === Number(this.selectedListId)).length;
+            },
+
+            get hasVisibleMatches() {
+                return this.visibleMatchCount > 0;
+            },
+
+            get visibleMatchCountLabel() {
+                return this.visibleMatchCount ? `${this.visibleMatchCount} shown` : '';
+            },
+
+            selectList(listId) {
+                this.selectedListId = listId;
+                this.renderChart();
+            },
+
+            initChart() {
+                this.renderChart();
+            },
+
+            buildDatasets(series) {
+                const multi = series.length > 1;
+                return series.map((s, index) => {
+                    const color = palette[index % palette.length];
+                    return {
+                        label: s.title,
+                        data: s.points.map((p) => p.elo),
+                        borderColor: color,
+                        backgroundColor: color + '22',
+                        fill: !multi,
+                        spanGaps: true,
+                        tension: 0.25,
+                        borderWidth: 2.5,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                    };
+                });
+            },
+
+            renderChart() {
+                const canvas = document.getElementById('elo-rating-chart');
+                if (!canvas || typeof Chart === 'undefined' || !this.hasChartData) {
+                    return;
+                }
+
+                const series = this.selectedSeries;
+                if (!series.length) {
+                    return;
+                }
+
+                const multi = series.length > 1;
+                const labelSource = multi
+                    ? series.reduce((a, b) => (a.points.length >= b.points.length ? a : b))
+                    : series[0];
+                const labels = (labelSource?.points || []).map((p) => p.label);
+                const datasets = this.buildDatasets(series);
+
+                // Destroy + recreate so the canvas always matches the selected pills.
+                const existing = Chart.getChart(canvas);
+                if (existing) {
+                    existing.destroy();
+                }
+                if (eloChart) {
+                    try { eloChart.destroy(); } catch (e) {}
+                    eloChart = null;
+                }
+
+                eloChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 250 },
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                display: multi,
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 10,
+                                    boxHeight: 10,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: { size: 11 },
+                                    color: '#64748b',
+                                },
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} ELO`,
+                                },
+                            },
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 0 },
+                            },
+                            y: {
+                                grace: '8%',
+                                grid: { color: '#f1f5f9' },
+                                ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 },
+                            },
+                        },
+                    },
+                });
+            },
+        };
+    }
+</script>
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
 @endsection

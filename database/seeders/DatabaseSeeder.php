@@ -143,12 +143,15 @@ class DatabaseSeeder extends Seeder
         $bo5Rankings = $this->enrollSingles($bestOf5, $members);
         $bo3Rankings = $this->enrollSingles($bestOf3, $members->take(80));
         $bo7Rankings = $this->enrollSingles($bestOf7, $members->take(60));
-        $doublesRankings = $this->enrollDoubles($doubles, $members, teamCount: 30);
+        $doublesIndividuals = $this->enrollDoublesIndividuals($doubles, $members);
 
         // Fresh bulk history — wipe prior demo matches so re-seed is predictable.
         DB::table('elo_histories')->delete();
         DB::table('match_sets')->delete();
         DB::table('match_records')->delete();
+
+        // Drop legacy pair-only rows so re-seed starts from individuals + pairs formed by matches.
+        PlayerRanking::where('ranking_list_id', $doubles->id)->pairs()->delete();
 
         PlayerRanking::query()->update([
             'matches_played' => 0,
@@ -156,6 +159,7 @@ class DatabaseSeeder extends Seeder
             'losses' => 0,
             'sets_won' => 0,
             'sets_lost' => 0,
+            'current_streak' => 0,
         ]);
 
         // Reset ELOs to list initial before replaying history.
@@ -168,7 +172,7 @@ class DatabaseSeeder extends Seeder
             ['list' => $bestOf5, 'rankings' => $bo5Rankings, 'count' => 420],
             ['list' => $bestOf3, 'rankings' => $bo3Rankings, 'count' => 320],
             ['list' => $bestOf7, 'rankings' => $bo7Rankings, 'count' => 140],
-            ['list' => $doubles, 'rankings' => $doublesRankings, 'count' => 120],
+            ['list' => $doubles, 'rankings' => $doublesIndividuals, 'count' => 120],
         ];
 
         $eloService = new EloService();
@@ -179,19 +183,24 @@ class DatabaseSeeder extends Seeder
             $list = $plan['list'];
             $rankings = $plan['rankings']->values();
             $n = $rankings->count();
+            $minPlayers = $list->type === 'doubles' ? 4 : 2;
 
-            if ($n < 2) {
+            if ($n < $minPlayers) {
                 continue;
             }
 
             for ($i = 0; $i < $plan['count']; $i++) {
-                $side1Index = random_int(0, $n - 1);
-                do {
-                    $side2Index = random_int(0, $n - 1);
-                } while ($side2Index === $side1Index);
+                if ($list->type === 'doubles') {
+                    [$side1, $side2] = $this->pickDoublesSides($list, $rankings);
+                } else {
+                    $side1Index = random_int(0, $n - 1);
+                    do {
+                        $side2Index = random_int(0, $n - 1);
+                    } while ($side2Index === $side1Index);
 
-                $side1 = $rankings[$side1Index]->fresh();
-                $side2 = $rankings[$side2Index]->fresh();
+                    $side1 = $rankings[$side1Index]->fresh();
+                    $side2 = $rankings[$side2Index]->fresh();
+                }
 
                 $playedAt = now()
                     ->subDays(random_int(0, $daysBack))
@@ -246,6 +255,7 @@ class DatabaseSeeder extends Seeder
                     'losses' => 0,
                     'sets_won' => 0,
                     'sets_lost' => 0,
+                    'current_streak' => 0,
                 ]
             ));
         }
@@ -254,43 +264,65 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
+     * Enroll every member as an individual on a doubles list.
+     * Pair rankings are created on demand when matches are seeded.
+     *
      * @param  \Illuminate\Support\Collection<int, User>  $members
      * @return \Illuminate\Support\Collection<int, PlayerRanking>
      */
-    private function enrollDoubles(RankingList $list, $members, int $teamCount)
+    private function enrollDoublesIndividuals(RankingList $list, $members)
     {
-        $shuffled = $members->shuffle()->values();
         $rankings = collect();
-        $pairCount = min($teamCount, intdiv($shuffled->count(), 2));
 
-        for ($i = 0; $i < $pairCount; $i++) {
-            $p1 = $shuffled[$i * 2];
-            $p2 = $shuffled[$i * 2 + 1];
-
-            // Canonical order so unique (list, user_id, player2_id) stays stable.
-            if ($p1->id > $p2->id) {
-                [$p1, $p2] = [$p2, $p1];
-            }
-
+        foreach ($members as $index => $user) {
             $rankings->push(PlayerRanking::firstOrCreate(
                 [
                     'ranking_list_id' => $list->id,
-                    'user_id' => $p1->id,
-                    'player2_id' => $p2->id,
+                    'user_id' => $user->id,
+                    'player2_id' => null,
                 ],
                 [
-                    'team_name' => "{$p1->name} / {$p2->name}",
-                    'elo_rating' => $list->initial_elo + random_int(-30, 30),
+                    'elo_rating' => $list->initial_elo + ($index % 40) - 20,
                     'matches_played' => 0,
                     'wins' => 0,
                     'losses' => 0,
                     'sets_won' => 0,
                     'sets_lost' => 0,
+                    'current_streak' => 0,
                 ]
             ));
         }
 
         return $rankings;
+    }
+
+    /**
+     * Pick four distinct enrolled individuals and resolve/create pair sides.
+     *
+     * @param  \Illuminate\Support\Collection<int, PlayerRanking>  $individuals
+     * @return array{0: PlayerRanking, 1: PlayerRanking}
+     */
+    private function pickDoublesSides(RankingList $list, $individuals): array
+    {
+        $n = $individuals->count();
+        $indexes = [];
+
+        while (count($indexes) < 4) {
+            $pick = random_int(0, $n - 1);
+            if (! in_array($pick, $indexes, true)) {
+                $indexes[] = $pick;
+            }
+        }
+
+        $p1 = $individuals[$indexes[0]]->fresh();
+        $p2 = $individuals[$indexes[1]]->fresh();
+        $p3 = $individuals[$indexes[2]]->fresh();
+        $p4 = $individuals[$indexes[3]]->fresh();
+
+        $side1 = PlayerRanking::findOrCreatePair($list, (int) $p1->user_id, (int) $p2->user_id);
+        $side2 = PlayerRanking::findOrCreatePair($list, (int) $p3->user_id, (int) $p4->user_id);
+
+        return [$side1, $side2];
     }
 
     private function createSetsForMatch(MatchRecord $match, int $setsToWin): void

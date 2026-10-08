@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\EloHistory;
 use App\Models\MatchRecord;
+use App\Models\PlayerRanking;
 
 class EloService
 {
@@ -58,6 +59,7 @@ class EloService
 
     /**
      * Finalize match and calculate ELO updates for both sides.
+     * Doubles lists also update each partner's individual ranking using avg-vs-avg.
      */
     public function processMatchResult(MatchRecord $match): void
     {
@@ -65,11 +67,10 @@ class EloService
         $side1Ranking = $match->side1Ranking;
         $side2Ranking = $match->side2Ranking;
 
-        if (!$rankingList || !$side1Ranking || !$side2Ranking) {
+        if (! $rankingList || ! $side1Ranking || ! $side2Ranking) {
             return;
         }
 
-        // Calculate sets won
         $side1SetsWon = $match->sets()->where('winner_side', 1)->count();
         $side2SetsWon = $match->sets()->where('winner_side', 2)->count();
 
@@ -81,13 +82,11 @@ class EloService
         } elseif ($side2SetsWon >= $maxSetsToWin) {
             $winnerSide = 2;
         } else {
-            // Determine winner by highest sets won if match finished early
             $winnerSide = $side1SetsWon > $side2SetsWon ? 1 : ($side2SetsWon > $side1SetsWon ? 2 : 1);
         }
 
         $r1 = $side1Ranking->elo_rating;
         $r2 = $side2Ranking->elo_rating;
-
         $kFactor = $rankingList->k_factor ?? 32;
 
         $preview = self::preview($r1, $r2, $kFactor, $winnerSide);
@@ -96,7 +95,6 @@ class EloService
         $change1 = $preview['side1']['projected_delta'] ?? 0;
         $change2 = $preview['side2']['projected_delta'] ?? 0;
 
-        // Update MatchRecord
         $match->update([
             'winner_side' => $winnerSide,
             'side1_sets_won' => $side1SetsWon,
@@ -109,43 +107,135 @@ class EloService
             'played_at' => $match->played_at ?? now(),
         ]);
 
-        // Update Side 1 Player Ranking
-        $side1Ranking->update([
-            'elo_rating' => $newR1,
-            'matches_played' => $side1Ranking->matches_played + 1,
-            'wins' => $side1Ranking->wins + ($winnerSide === 1 ? 1 : 0),
-            'losses' => $side1Ranking->losses + ($winnerSide === 1 ? 0 : 1),
-            'sets_won' => $side1Ranking->sets_won + $side1SetsWon,
-            'sets_lost' => $side1Ranking->sets_lost + $side2SetsWon,
+        $this->applyRankingResult(
+            $side1Ranking,
+            $newR1,
+            $change1,
+            $winnerSide === 1,
+            $side1SetsWon,
+            $side2SetsWon,
+            $rankingList->id,
+            $match->id,
+            $r1,
+        );
+
+        $this->applyRankingResult(
+            $side2Ranking,
+            $newR2,
+            $change2,
+            $winnerSide === 2,
+            $side2SetsWon,
+            $side1SetsWon,
+            $rankingList->id,
+            $match->id,
+            $r2,
+        );
+
+        if ($rankingList->type === 'doubles' && $side1Ranking->isPair() && $side2Ranking->isPair()) {
+            $this->updateDoublesIndividuals(
+                $side1Ranking,
+                $side2Ranking,
+                $winnerSide,
+                $side1SetsWon,
+                $side2SetsWon,
+                $kFactor,
+                $rankingList->id,
+                $match->id,
+            );
+        }
+    }
+
+    protected function applyRankingResult(
+        PlayerRanking $ranking,
+        int $newElo,
+        int $change,
+        bool $won,
+        int $setsWon,
+        int $setsLost,
+        int $rankingListId,
+        int $matchId,
+        int $oldElo,
+    ): void {
+        $ranking->update([
+            'elo_rating' => $newElo,
+            'matches_played' => $ranking->matches_played + 1,
+            'wins' => $ranking->wins + ($won ? 1 : 0),
+            'losses' => $ranking->losses + ($won ? 0 : 1),
+            'sets_won' => $ranking->sets_won + $setsWon,
+            'sets_lost' => $ranking->sets_lost + $setsLost,
+            'current_streak' => $ranking->nextStreak($won),
         ]);
 
-        // Update Side 2 Player Ranking
-        $side2Ranking->update([
-            'elo_rating' => $newR2,
-            'matches_played' => $side2Ranking->matches_played + 1,
-            'wins' => $side2Ranking->wins + ($winnerSide === 2 ? 1 : 0),
-            'losses' => $side2Ranking->losses + ($winnerSide === 2 ? 0 : 1),
-            'sets_won' => $side2Ranking->sets_won + $side2SetsWon,
-            'sets_lost' => $side2Ranking->sets_lost + $side1SetsWon,
-        ]);
-
-        // Create ELO History Logs
         EloHistory::create([
-            'ranking_list_id' => $rankingList->id,
-            'match_record_id' => $match->id,
-            'player_ranking_id' => $side1Ranking->id,
-            'old_elo' => $r1,
-            'new_elo' => $newR1,
-            'elo_change' => $change1,
+            'ranking_list_id' => $rankingListId,
+            'match_record_id' => $matchId,
+            'player_ranking_id' => $ranking->id,
+            'old_elo' => $oldElo,
+            'new_elo' => $newElo,
+            'elo_change' => $change,
         ]);
+    }
 
-        EloHistory::create([
-            'ranking_list_id' => $rankingList->id,
-            'match_record_id' => $match->id,
-            'player_ranking_id' => $side2Ranking->id,
-            'old_elo' => $r2,
-            'new_elo' => $newR2,
-            'elo_change' => $change2,
-        ]);
+    /**
+     * Apply the same team-vs-team delta to each partner's individual doubles ranking.
+     */
+    protected function updateDoublesIndividuals(
+        PlayerRanking $side1Pair,
+        PlayerRanking $side2Pair,
+        int $winnerSide,
+        int $side1SetsWon,
+        int $side2SetsWon,
+        int $kFactor,
+        int $rankingListId,
+        int $matchId,
+    ): void {
+        $side1Partners = $side1Pair->individualPartners();
+        $side2Partners = $side2Pair->individualPartners();
+
+        if (! $side1Partners || ! $side2Partners) {
+            return;
+        }
+
+        [$s1a, $s1b] = $side1Partners;
+        [$s2a, $s2b] = $side2Partners;
+
+        $avg1 = (int) round(($s1a->elo_rating + $s1b->elo_rating) / 2);
+        $avg2 = (int) round(($s2a->elo_rating + $s2b->elo_rating) / 2);
+
+        $preview = self::preview($avg1, $avg2, $kFactor, $winnerSide);
+        $delta1 = $preview['side1']['projected_delta'] ?? 0;
+        $delta2 = $preview['side2']['projected_delta'] ?? 0;
+
+        foreach ([$s1a, $s1b] as $individual) {
+            $old = $individual->elo_rating;
+            $new = $old + $delta1;
+            $this->applyRankingResult(
+                $individual,
+                $new,
+                $delta1,
+                $winnerSide === 1,
+                $side1SetsWon,
+                $side2SetsWon,
+                $rankingListId,
+                $matchId,
+                $old,
+            );
+        }
+
+        foreach ([$s2a, $s2b] as $individual) {
+            $old = $individual->elo_rating;
+            $new = $old + $delta2;
+            $this->applyRankingResult(
+                $individual,
+                $new,
+                $delta2,
+                $winnerSide === 2,
+                $side2SetsWon,
+                $side1SetsWon,
+                $rankingListId,
+                $matchId,
+                $old,
+            );
+        }
     }
 }
