@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
@@ -19,7 +20,27 @@ class UserResource extends Resource
 
     protected static ?string $navigationGroup = 'Club Management';
 
-    protected static ?string $label = 'Member / User';
+    protected static ?string $navigationLabel = 'Members';
+
+    protected static ?string $modelLabel = 'Member';
+
+    protected static ?string $pluralModelLabel = 'Members';
+
+    protected static ?int $navigationSort = 10;
+
+    protected static ?string $slug = 'members';
+
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && $user->isManager();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereNotIn('status', ['pending', 'rejected']);
+    }
 
     public static function form(Form $form): Form
     {
@@ -58,6 +79,9 @@ class UserResource extends Resource
                             ->maxLength(255),
                         Forms\Components\DatePicker::make('date_of_birth')
                             ->label('Date of Birth'),
+                        Forms\Components\Select::make('gender')
+                            ->options(User::GENDERS)
+                            ->required(),
                         Forms\Components\Select::make('status')
                             ->options([
                                 'active' => 'Active',
@@ -101,6 +125,9 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('date_of_birth')
                     ->date()
                     ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('gender')
+                    ->formatStateUsing(fn (?string $state): string => User::GENDERS[$state] ?? '—')
                     ->toggleable(),
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([

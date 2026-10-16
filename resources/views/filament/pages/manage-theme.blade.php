@@ -4,7 +4,7 @@
 
         <div class="flex items-center gap-3">
             <x-filament::button type="submit">
-                Save theme colors
+                Save settings
             </x-filament::button>
 
             <x-filament::button color="gray" type="button" wire:click="resetToNepalDefaults">
@@ -15,6 +15,14 @@
 
     <div class="mt-8 rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">Live preview (public site)</p>
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            @if(is_string($this->data['logo_path'] ?? null) && $this->data['logo_path'] !== '')
+                <img src="{{ asset('storage/'.ltrim($this->data['logo_path'], '/')) }}" alt="Club logo" class="h-12 w-12 rounded-xl object-cover border border-gray-200">
+            @else
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-gray-200 text-xs font-bold text-gray-500">TT</span>
+            @endif
+            <span class="text-sm text-gray-600 dark:text-gray-300">Header logo</span>
+        </div>
         <div class="flex flex-wrap items-center gap-3">
             <span class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background-color: {{ $this->data['primary_color'] ?? '#DC143C' }}">
                 Primary button

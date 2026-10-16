@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class ThemeSetting extends Model
 {
@@ -16,6 +17,7 @@ class ThemeSetting extends Model
     protected $fillable = [
         'primary_color',
         'secondary_color',
+        'logo_path',
     ];
 
     public static function current(): self
@@ -95,5 +97,59 @@ class ThemeSetting extends Model
         ]);
 
         return $theme->fresh();
+    }
+
+    /**
+     * Save brand colors and the uploaded logo path.
+     * A null logo clears the upload and removes the stored file.
+     */
+    public function saveBrand(string $primary, string $secondary, ?string $logoPath): self
+    {
+        $primary = strtoupper($primary);
+        $secondary = strtoupper($secondary);
+        $logoPath = is_string($logoPath) && $logoPath !== '' ? $logoPath : null;
+
+        if (! Schema::hasTable('theme_settings')) {
+            $this->primary_color = $primary;
+            $this->secondary_color = $secondary;
+            $this->logo_path = $logoPath;
+
+            return $this;
+        }
+
+        $theme = static::query()->first();
+
+        if (! $theme) {
+            return static::query()->create([
+                'primary_color' => $primary,
+                'secondary_color' => $secondary,
+                'logo_path' => $logoPath,
+            ]);
+        }
+
+        $previousLogo = $theme->logo_path;
+
+        $theme->update([
+            'primary_color' => $primary,
+            'secondary_color' => $secondary,
+            'logo_path' => $logoPath,
+        ]);
+
+        if (is_string($previousLogo) && $previousLogo !== '' && $previousLogo !== $logoPath) {
+            Storage::disk('public')->delete($previousLogo);
+        }
+
+        return $theme->fresh();
+    }
+
+    public function logoUrl(): ?string
+    {
+        $path = $this->logo_path;
+
+        if (! is_string($path) || trim($path) === '') {
+            return null;
+        }
+
+        return asset('storage/'.ltrim($path, '/'));
     }
 }

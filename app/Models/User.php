@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Mail\ApplicationAccepted;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -9,11 +10,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const GENDERS = [
+        'female' => 'Female',
+        'male' => 'Male',
+    ];
 
     protected $fillable = [
         'name',
@@ -24,6 +31,7 @@ class User extends Authenticatable implements FilamentUser
         'phone',
         'address',
         'date_of_birth',
+        'gender',
         'status',
         'avatar_url',
     ];
@@ -54,7 +62,21 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isManager() && $this->status === 'active';
+        return $this->status === 'active';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(function (User $user): void {
+            if ($user->wasChanged('status') && $user->getOriginal('status') === 'pending' && $user->status === 'active') {
+                Mail::to($user)->send(new ApplicationAccepted($user));
+            }
+        });
     }
 
     public function rankings(): HasMany

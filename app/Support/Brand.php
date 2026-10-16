@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\ThemeSetting;
+
 class Brand
 {
     public static function name(): string
@@ -12,6 +14,21 @@ class Brand
     }
 
     public static function logoUrl(): ?string
+    {
+        try {
+            $uploaded = ThemeSetting::current()->logoUrl();
+
+            if (is_string($uploaded) && $uploaded !== '') {
+                return $uploaded;
+            }
+        } catch (\Throwable) {
+            // Fall back to APP_LOGO when theme settings are unavailable.
+        }
+
+        return self::configuredLogoUrl();
+    }
+
+    private static function configuredLogoUrl(): ?string
     {
         $logo = config('app.logo');
 

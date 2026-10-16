@@ -2,9 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\Login;
 use App\Models\ThemeSetting;
 use App\Support\Brand;
 use Filament\Http\Middleware\Authenticate;
+use Illuminate\Support\HtmlString;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -28,10 +30,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
             ->brandName(Brand::name())
-            ->brandLogo(Brand::logoUrl())
-            ->brandLogoHeight('2rem')
+            ->brandLogo(fn (): HtmlString => new HtmlString(view('filament.admin-brand')->render()))
+            ->brandLogoHeight('auto')
             ->homeUrl(url('/'))
             ->colors([
                 'primary' => Color::hex(ThemeSetting::primaryHex()),

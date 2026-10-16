@@ -14,13 +14,15 @@ class ManageTheme extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-swatch';
+    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static string $view = 'filament.pages.manage-theme';
 
-    protected static ?string $navigationLabel = 'Theme Colors';
+    protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?string $title = 'Theme Colors';
+    protected static ?string $title = 'Settings';
+
+    protected static ?string $slug = 'settings';
 
     protected static ?string $navigationGroup = 'Club Management';
 
@@ -40,6 +42,7 @@ class ManageTheme extends Page implements HasForms
         $this->form->fill([
             'primary_color' => $theme->primary_color ?: ThemeSetting::DEFAULT_PRIMARY,
             'secondary_color' => $theme->secondary_color ?: ThemeSetting::DEFAULT_SECONDARY,
+            'logo_path' => $theme->logo_path,
         ]);
     }
 
@@ -47,6 +50,19 @@ class ManageTheme extends Page implements HasForms
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Logo')
+                    ->description('Shown in the public header and the admin portal. If no logo is uploaded, the site uses APP_LOGO from the environment, then the TT mark.')
+                    ->schema([
+                        Forms\Components\FileUpload::make('logo_path')
+                            ->label('Club logo')
+                            ->image()
+                            ->disk('public')
+                            ->directory('brand')
+                            ->visibility('public')
+                            ->imagePreviewHeight('80')
+                            ->maxSize(2048)
+                            ->helperText('PNG, JPG, WEBP, or GIF. Max 2 MB. Remove the file and save to restore the default mark.'),
+                    ]),
                 Forms\Components\Section::make('Brand palette')
                     ->description('Only two brand colors are configurable. The public site background is always white. Defaults match the Nepal national flag.')
                     ->schema([
@@ -69,15 +85,21 @@ class ManageTheme extends Page implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
+        $logo = $data['logo_path'] ?? null;
 
-        ThemeSetting::current()->saveColors(
+        if (is_array($logo)) {
+            $logo = $logo[0] ?? null;
+        }
+
+        ThemeSetting::current()->saveBrand(
             $data['primary_color'],
             $data['secondary_color'],
+            is_string($logo) ? $logo : null,
         );
 
         Notification::make()
-            ->title('Theme colors saved')
-            ->body('Public pages will use the new primary and secondary colors.')
+            ->title('Settings saved')
+            ->body('Public pages will use the new logo and brand colors.')
             ->success()
             ->send();
     }
@@ -87,6 +109,7 @@ class ManageTheme extends Page implements HasForms
         $this->form->fill([
             'primary_color' => ThemeSetting::DEFAULT_PRIMARY,
             'secondary_color' => ThemeSetting::DEFAULT_SECONDARY,
+            'logo_path' => ThemeSetting::current()->logo_path,
         ]);
 
         ThemeSetting::current()->saveColors(

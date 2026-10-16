@@ -134,10 +134,7 @@
                             </div>
                         </div>
                     @endif
-                    <div class="min-w-0">
-                        <h1 class="font-heading font-bold text-lg leading-none tracking-tight text-ink truncate">{{ \App\Support\Brand::name() }}</h1>
-                        <p class="text-xs text-muted font-medium mt-0.5">Competitive ELO League</p>
-                    </div>
+                    <h1 class="min-w-0 font-heading font-bold text-lg leading-none tracking-tight text-ink truncate">{{ \App\Support\Brand::name() }}</h1>
                 </a>
 
                 {{-- Desktop horizontal nav --}}
@@ -156,10 +153,17 @@
                     </a>
                 </nav>
                 
-                <a href="/admin/login" class="shrink-0 px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold bg-secondary-soft text-secondary border border-secondary hover:bg-secondary hover:text-white transition flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                    Portal
-                </a>
+                <div class="shrink-0 flex items-center gap-2">
+                    @guest
+                        <a href="{{ route('apply') }}" class="px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold bg-primary-soft text-primary border border-primary hover:bg-primary hover:text-white transition">
+                            Apply
+                        </a>
+                    @endguest
+                    <a href="/admin/login" class="px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold bg-secondary-soft text-secondary border border-secondary hover:bg-secondary hover:text-white transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                        Portal
+                    </a>
+                </div>
             </header>
 
             <!-- Main Scrollable Content Area -->

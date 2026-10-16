@@ -20,6 +20,13 @@ class RankingListResource extends Resource
 
     protected static ?string $label = 'Ranking List';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof \App\Models\User && $user->isManager();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
