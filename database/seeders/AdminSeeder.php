@@ -26,6 +26,11 @@ class AdminSeeder extends Seeder
             ]
         );
 
+        $admin->forceFill([
+            'role' => 'admin',
+            'status' => 'active',
+        ])->save();
+
         $this->command?->info(sprintf(
             'Seeded admin: %s (password: password).',
             $admin->email,

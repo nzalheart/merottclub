@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Table Tennis Club') - Dynamic ELO Rankings</title>
+    <title>@yield('title', \App\Support\Brand::name()) - Dynamic ELO Rankings</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,13 +125,17 @@
             <!-- App Top Bar Header -->
             <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-5 py-4 lg:px-8 border-b border-theme flex items-center justify-between gap-4">
                 <a href="{{ route('leaderboard') }}" class="flex items-center gap-3 min-w-0 hover:opacity-90 transition">
-                    <div class="w-10 h-10 shrink-0 rounded-xl p-0.5 shadow-sm" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
-                        <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center font-heading font-black text-xl text-primary">
-                            TT
+                    @if($logoUrl = \App\Support\Brand::logoUrl())
+                        <img src="{{ $logoUrl }}" alt="{{ \App\Support\Brand::name() }}" class="w-10 h-10 shrink-0 rounded-xl object-cover shadow-sm">
+                    @else
+                        <div class="w-10 h-10 shrink-0 rounded-xl p-0.5 shadow-sm" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
+                            <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center font-heading font-black text-xl text-primary">
+                                TT
+                            </div>
                         </div>
-                    </div>
+                    @endif
                     <div class="min-w-0">
-                        <h1 class="font-heading font-bold text-lg leading-none tracking-tight text-ink truncate">Table Tennis Club</h1>
+                        <h1 class="font-heading font-bold text-lg leading-none tracking-tight text-ink truncate">{{ \App\Support\Brand::name() }}</h1>
                         <p class="text-xs text-muted font-medium mt-0.5">Competitive ELO League</p>
                     </div>
                 </a>

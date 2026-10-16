@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Models\ThemeSetting;
+use App\Support\Brand;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,7 +29,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('Table Tennis Club')
+            ->brandName(Brand::name())
+            ->brandLogo(Brand::logoUrl())
+            ->brandLogoHeight('2rem')
             ->homeUrl(url('/'))
             ->colors([
                 'primary' => Color::hex(ThemeSetting::primaryHex()),

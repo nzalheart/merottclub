@@ -13,7 +13,19 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Table Tennis Club'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Logo
+    |--------------------------------------------------------------------------
+    |
+    | Optional header logo. Set APP_LOGO to a public path (images/logo.png)
+    | or a full URL. When empty, the public site uses the TT mark.
+    |
+    */
+
+    'logo' => env('APP_LOGO'),
 
     /*
     |--------------------------------------------------------------------------
