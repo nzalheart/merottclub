@@ -3,6 +3,8 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
+use App\Filament\Auth\RequestPasswordReset;
+use App\Filament\Auth\ResetPassword;
 use App\Models\ThemeSetting;
 use App\Support\Brand;
 use Filament\Http\Middleware\Authenticate;
@@ -31,10 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
+            ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
             ->brandName(Brand::name())
             ->brandLogo(fn (): HtmlString => new HtmlString(view('filament.admin-brand')->render()))
             ->brandLogoHeight('auto')
             ->homeUrl(url('/'))
+            ->darkMode(false)
             ->colors([
                 'primary' => Color::hex(ThemeSetting::primaryHex()),
             ])

@@ -139,6 +139,8 @@
                     <h1 class="min-w-0 font-heading font-bold text-lg leading-none tracking-tight text-ink truncate">{{ \App\Support\Brand::name() }}</h1>
                 </a>
 
+                @php($showAdminLinks = ! auth()->check() || auth()->user()->canEnterAdmin())
+
                 {{-- Desktop horizontal nav --}}
                 <nav class="hidden lg:flex items-center gap-1 flex-1 justify-center">
                     <a href="{{ route('leaderboard') }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('leaderboard') ? 'nav-link-active' : 'nav-link-idle' }}">
@@ -150,9 +152,11 @@
                     <a href="{{ route('head-to-head') }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('head-to-head') ? 'nav-link-active' : 'nav-link-idle' }}">
                         Head-to-Head
                     </a>
-                    <a href="/admin/match-records/create" class="px-4 py-2 rounded-xl text-sm font-medium text-primary hover:bg-primary-soft transition">
-                        + Score Match
-                    </a>
+                    @if($showAdminLinks)
+                        <a href="/admin/match-records/create" class="px-4 py-2 rounded-xl text-sm font-medium text-primary hover:bg-primary-soft transition">
+                            + Score Match
+                        </a>
+                    @endif
                 </nav>
                 
                 <div class="shrink-0 flex items-center gap-2">
@@ -161,10 +165,12 @@
                             Apply
                         </a>
                     @endguest
-                    <a href="/admin/login" class="px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold bg-secondary-soft text-secondary border border-secondary hover:bg-secondary hover:text-white transition flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                        Portal
-                    </a>
+                    @if($showAdminLinks)
+                        <a href="/admin/login" class="px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold bg-secondary-soft text-secondary border border-secondary hover:bg-secondary hover:text-white transition flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                            Portal
+                        </a>
+                    @endif
                     @auth
                         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                             <button type="button" @click="open = !open" class="w-9 h-9 rounded-full overflow-hidden border border-secondary bg-secondary-soft text-secondary flex items-center justify-center font-heading font-bold text-sm" aria-label="Account menu" aria-haspopup="true" :aria-expanded="open">
@@ -208,12 +214,14 @@
                     <span>H2H</span>
                 </a>
 
-                <a href="/admin/match-records/create" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium text-primary hover:opacity-80 transition">
-                    <div class="w-7 h-7 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold">
-                        +
-                    </div>
-                    <span>Score</span>
-                </a>
+                @if($showAdminLinks)
+                    <a href="/admin/match-records/create" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium text-primary hover:opacity-80 transition">
+                        <div class="w-7 h-7 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold">
+                            +
+                        </div>
+                        <span>Score</span>
+                    </a>
+                @endif
             </nav>
 
         </div>

@@ -7,16 +7,18 @@ use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Mail;
 
-class User extends Authenticatable implements FilamentUser, HasAvatar
+class User extends Authenticatable implements CanResetPasswordContract, FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use CanResetPassword, HasFactory, Notifiable;
 
     public const GENDERS = [
         'female' => 'Female',
@@ -61,9 +63,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return in_array($this->role, ['admin', 'manager']);
     }
 
+    public function canEnterAdmin(): bool
+    {
+        return $this->status === 'active' && $this->isManager();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->status === 'active';
+        return $this->canEnterAdmin();
     }
 
     public function isPending(): bool

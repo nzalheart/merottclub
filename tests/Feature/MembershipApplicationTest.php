@@ -78,9 +78,8 @@ class MembershipApplicationTest extends TestCase
         $applicant->update(['status' => 'active']);
 
         $this->actingAs($applicant->fresh())
-            ->followingRedirects()
             ->get('/admin')
-            ->assertOk();
+            ->assertForbidden();
 
         Mail::assertSent(ApplicationAccepted::class, function (ApplicationAccepted $mail) use ($applicant) {
             $html = $mail->render();

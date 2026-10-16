@@ -37,7 +37,9 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee('Profile')
             ->assertSee('Sign out')
-            ->assertDontSee('>Apply<', false);
+            ->assertDontSee('>Apply<', false)
+            ->assertDontSee('Portal')
+            ->assertDontSee('/admin', false);
 
         $this->actingAs($user)
             ->put(route('profile.update'), [
