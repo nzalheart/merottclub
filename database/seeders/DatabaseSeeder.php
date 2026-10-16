@@ -29,18 +29,8 @@ class DatabaseSeeder extends Seeder
             ThemeSetting::DEFAULT_SECONDARY,
         );
 
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@ttclub.com'],
-            [
-                'name' => 'Club Admin',
-                'nickname' => 'admin_boss',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'phone' => '+977 9801234567',
-                'address' => 'Kathmandu, Nepal',
-                'status' => 'active',
-            ]
-        );
+        $this->call(AdminSeeder::class);
+        $admin = User::where('email', 'admin@ttclub.com')->firstOrFail();
 
         $manager = User::firstOrCreate(
             ['email' => 'manager@ttclub.com'],
