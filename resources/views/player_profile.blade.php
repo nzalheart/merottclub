@@ -19,9 +19,13 @@
         <div class="absolute inset-x-0 top-0 h-1.5" style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
         <div class="flex flex-col sm:flex-row sm:items-center gap-4 relative z-10">
             <div class="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl p-0.5 shadow-sm shrink-0" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
-                <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center font-heading font-black text-2xl lg:text-3xl text-secondary">
-                    {{ strtoupper(substr($user->name, 0, 2)) }}
-                </div>
+                @if($avatarUrl = $user->avatarPublicUrl())
+                    <img src="{{ $avatarUrl }}" alt="" class="w-full h-full rounded-[14px] object-cover bg-white">
+                @else
+                    <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center font-heading font-black text-2xl lg:text-3xl text-secondary">
+                        {{ strtoupper(substr($user->name, 0, 2)) }}
+                    </div>
+                @endif
             </div>
 
             <div class="min-w-0 flex-1">

@@ -35,6 +35,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
+        [x-cloak] { display: none !important; }
+
         :root {
             --color-bg: #ffffff;
             --color-ink: #0f172a;
@@ -163,6 +165,24 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                         Portal
                     </a>
+                    @auth
+                        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                            <button type="button" @click="open = !open" class="w-9 h-9 rounded-full overflow-hidden border border-secondary bg-secondary-soft text-secondary flex items-center justify-center font-heading font-bold text-sm" aria-label="Account menu" aria-haspopup="true" :aria-expanded="open">
+                                @if($avatarUrl = auth()->user()->avatarPublicUrl())
+                                    <img src="{{ $avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                @else
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                @endif
+                            </button>
+                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-44 rounded-xl border border-theme bg-white shadow-lg py-1 z-50">
+                                <a href="{{ route('profile.edit') }}" class="block px-3 py-2 text-sm font-medium text-ink hover:bg-surface">Profile</a>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left px-3 py-2 text-sm font-medium text-ink hover:bg-surface">Sign out</button>
+                                </form>
+                            </div>
+                        </div>
+                    @endauth
                 </div>
             </header>
 

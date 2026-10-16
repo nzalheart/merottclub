@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Mail\ApplicationAccepted;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Mail;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -68,6 +69,26 @@ class User extends Authenticatable implements FilamentUser
     public function isPending(): bool
     {
         return $this->status === 'pending';
+    }
+
+    public function avatarPublicUrl(): ?string
+    {
+        $path = $this->avatar_url;
+
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return asset('storage/'.ltrim($path, '/')).'?v='.$this->updated_at?->timestamp;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatarPublicUrl();
     }
 
     protected static function booted(): void
