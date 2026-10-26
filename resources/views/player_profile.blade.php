@@ -42,6 +42,13 @@
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-secondary-soft text-secondary border border-secondary">
                         {{ strtoupper($user->status) }} PLAYER
                     </span>
+                    @auth
+                        @if(auth()->id() !== $user->id && auth()->user()->status === 'active' && $user->status === 'active')
+                            <a href="{{ route('matches.start', ['opponent' => $user->id]) }}" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary text-white hover:opacity-90 transition">
+                                Start match
+                            </a>
+                        @endif
+                    @endauth
                     @if($user->address)
                         <span class="text-xs text-muted flex items-center gap-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>

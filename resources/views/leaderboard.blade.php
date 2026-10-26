@@ -69,6 +69,12 @@
                 <h2 class="text-base lg:text-xl font-bold font-heading text-ink leading-snug mt-1.5">{{ $currentList->title }}</h2>
                 <p class="text-xs text-muted mt-0.5 leading-relaxed line-clamp-2">{{ $currentList->description ?? 'Official ELO Leaderboard' }}</p>
 
+                @auth
+                    <a href="{{ route('matches.start', ['list_id' => $currentList->id]) }}" class="mt-3 inline-flex w-full items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 transition">
+                        Start match
+                    </a>
+                @endauth
+
                 @if($currentList->type === 'doubles')
                     <div class="mt-3 flex flex-wrap gap-1.5">
                         <a href="{{ route('leaderboard', array_filter(['list_id' => $currentList->id, 'view' => 'individual', 'search' => $search !== '' ? $search : null])) }}"

@@ -78,6 +78,17 @@ class User extends Authenticatable implements CanResetPasswordContract, Filament
         return $this->status === 'pending';
     }
 
+    public function publicName(): string
+    {
+        $nickname = trim((string) $this->nickname);
+
+        if ($nickname !== '') {
+            return "{$this->name} (@{$nickname})";
+        }
+
+        return $this->name;
+    }
+
     public function avatarPublicUrl(): ?string
     {
         $path = $this->avatar_url;

@@ -147,8 +147,16 @@
                         Rankings
                     </a>
                     <a href="{{ route('matches') }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('matches') ? 'nav-link-active' : 'nav-link-idle' }}">
-                        Matches
+                        Scores
                     </a>
+                    @auth
+                        <a href="{{ route('matches.requests') }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('matches.requests', 'matches.challenge', 'matches.start') ? 'nav-link-active' : 'nav-link-idle' }}">
+                            Matches
+                            @if(($openMatchCount ?? 0) > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">{{ $openMatchCount }}</span>
+                            @endif
+                        </a>
+                    @endauth
                     <a href="{{ route('head-to-head') }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('head-to-head') ? 'nav-link-active' : 'nav-link-idle' }}">
                         Head-to-Head
                     </a>
@@ -172,7 +180,11 @@
                         </a>
                     @endif
                     @auth
+                        <span class="max-w-[7.5rem] sm:max-w-[14rem] truncate text-sm font-semibold text-ink" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</span>
                         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                            @if(($openMatchCount ?? 0) > 0)
+                                <span class="absolute -top-0.5 -right-0.5 z-10 w-2.5 h-2.5 rounded-full bg-primary border-2 border-white pointer-events-none"></span>
+                            @endif
                             <button type="button" @click="open = !open" class="w-9 h-9 rounded-full overflow-hidden border border-secondary bg-secondary-soft text-secondary flex items-center justify-center font-heading font-bold text-sm" aria-label="Account menu" aria-haspopup="true" :aria-expanded="open">
                                 @if($avatarUrl = auth()->user()->avatarPublicUrl())
                                     <img src="{{ $avatarUrl }}" alt="" class="w-full h-full object-cover">
@@ -180,7 +192,13 @@
                                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                                 @endif
                             </button>
-                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-44 rounded-xl border border-theme bg-white shadow-lg py-1 z-50">
+                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-52 rounded-xl border border-theme bg-white shadow-lg py-1 z-50">
+                                <a href="{{ route('matches.requests') }}" class="block px-3 py-2 text-sm font-medium text-ink hover:bg-surface">
+                                    Matches
+                                    @if(($openMatchCount ?? 0) > 0)
+                                        <span class="text-primary">({{ $openMatchCount }})</span>
+                                    @endif
+                                </a>
                                 <a href="{{ route('profile.edit') }}" class="block px-3 py-2 text-sm font-medium text-ink hover:bg-surface">Profile</a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -194,6 +212,23 @@
 
             <!-- Main Scrollable Content Area -->
             <main class="flex-1 px-4 py-5 lg:px-8 lg:py-8 w-full bg-white">
+                @if(session('status'))
+                    <div class="mb-4 rounded-xl border border-secondary bg-secondary-soft px-4 py-3 text-sm text-secondary">
+                        {{ session('status') }}
+                    </div>
+                @endif
+                @auth
+                    @if(($openMatchCount ?? 0) > 0 && ! request()->routeIs('matches.requests', 'matches.challenge'))
+                        <a href="{{ route('matches.requests') }}" class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary bg-primary-soft px-4 py-3 text-sm text-primary">
+                            <span>
+                                <strong>{{ $openMatchCount }}</strong>
+                                open match {{ $openMatchCount === 1 ? 'request' : 'requests' }}.
+                                Refresh after someone accepts — updates are not live.
+                            </span>
+                            <span class="shrink-0 font-semibold">Review</span>
+                        </a>
+                    @endif
+                @endauth
                 @yield('content')
             </main>
 
@@ -206,7 +241,7 @@
 
                 <a href="{{ route('matches') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('matches') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Matches</span>
+                    <span>Scores</span>
                 </a>
 
                 <a href="{{ route('head-to-head') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('head-to-head') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">
