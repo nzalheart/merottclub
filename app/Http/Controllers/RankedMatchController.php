@@ -24,13 +24,14 @@ class RankedMatchController extends Controller
 
         $opponent = null;
         if ($request->filled('opponent')) {
-            $opponent = User::query()->where('status', 'active')->find($request->query('opponent'));
+            $opponent = User::query()->activePlayers()->find($request->query('opponent'));
             if ($opponent && $opponent->is($request->user())) {
                 $opponent = null;
             }
         }
 
-        $members = User::query()->where('status', 'active')->orderBy('name')->get();
+        $members = User::query()->activePlayers()->orderBy('name')->get();
+        $referees = User::query()->activeReferees()->orderBy('name')->get();
         $elos = $list
             ? PlayerRanking::query()
                 ->where('ranking_list_id', $list->id)
@@ -38,7 +39,7 @@ class RankedMatchController extends Controller
                 ->pluck('elo_rating', 'user_id')
             : collect();
 
-        return view('matches.start', compact('lists', 'list', 'opponent', 'members', 'elos'));
+        return view('matches.start', compact('lists', 'list', 'opponent', 'members', 'referees', 'elos'));
     }
 
     public function store(Request $request): RedirectResponse

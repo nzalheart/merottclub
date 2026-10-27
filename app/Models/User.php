@@ -9,6 +9,7 @@ use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -61,6 +62,27 @@ class User extends Authenticatable implements CanResetPasswordContract, Filament
     public function isManager(): bool
     {
         return in_array($this->role, ['admin', 'manager']);
+    }
+
+    /**
+     * Active members and managers who can be challenged as players (admins excluded).
+     */
+    public function scopeActivePlayers(Builder $query): Builder
+    {
+        return $query->where('status', 'active')->whereIn('role', ['member', 'manager']);
+    }
+
+    /**
+     * Active users who can referee a ranked match (admins allowed).
+     */
+    public function scopeActiveReferees(Builder $query): Builder
+    {
+        return $query->where('status', 'active')->whereIn('role', ['member', 'manager', 'admin']);
+    }
+
+    public function canBeChallenged(): bool
+    {
+        return $this->status === 'active' && in_array($this->role, ['member', 'manager'], true);
     }
 
     public function canEnterAdmin(): bool

@@ -28,9 +28,9 @@ class RankedMatchService
                 throw new InvalidArgumentException('Choose an active ranking list.');
             }
 
-            $challenger = $this->activeMember($challenger->id, 'You need an active membership to start a match.');
-            $opponent = $this->activeMember($opponentId, 'Choose an active member as the opponent.');
-            $referee = $this->activeMember($refereeId, 'Choose an active member as the referee.');
+            $challenger = $this->activePlayer($challenger->id, 'You need an active membership to start a match.');
+            $opponent = $this->activePlayer($opponentId, 'Choose an active member or manager as the opponent.');
+            $referee = $this->activeReferee($refereeId, 'Choose an active member, manager, or admin as the referee.');
 
             $rows = [
                 $this->participantRow($challenger->id, MatchChallengeParticipant::ROLE_CHALLENGER, 1, true),
@@ -42,8 +42,8 @@ class RankedMatchService
                     throw new InvalidArgumentException('A doubles match needs your partner, two opponents, and a referee.');
                 }
 
-                $partner = $this->activeMember($partnerId, 'Choose an active member as your partner.');
-                $opponentPartner = $this->activeMember($opponentPartnerId, 'Choose an active member as the second opponent.');
+                $partner = $this->activePlayer($partnerId, 'Choose an active member or manager as your partner.');
+                $opponentPartner = $this->activePlayer($opponentPartnerId, 'Choose an active member or manager as the second opponent.');
 
                 $rows[] = $this->participantRow($partner->id, MatchChallengeParticipant::ROLE_PARTNER, 1, false);
                 $rows[] = $this->participantRow($opponentPartner->id, MatchChallengeParticipant::ROLE_OPPONENT_PARTNER, 2, false);
@@ -367,9 +367,20 @@ class RankedMatchService
         return $participant;
     }
 
-    protected function activeMember(int $userId, string $message): User
+    protected function activePlayer(int $userId, string $message): User
     {
-        $user = User::query()->where('status', 'active')->find($userId);
+        $user = User::query()->activePlayers()->find($userId);
+
+        if (! $user) {
+            throw new InvalidArgumentException($message);
+        }
+
+        return $user;
+    }
+
+    protected function activeReferee(int $userId, string $message): User
+    {
+        $user = User::query()->activeReferees()->find($userId);
 
         if (! $user) {
             throw new InvalidArgumentException($message);

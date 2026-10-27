@@ -32,6 +32,7 @@ class RankedMatchChallengeTest extends TestCase
         $list = $this->singlesList();
         $member = User::factory()->member()->create();
         $opponent = User::factory()->member()->create();
+        $admin = User::factory()->admin()->create();
 
         $this->actingAs($member)
             ->get(route('leaderboard', ['list_id' => $list->id]))
@@ -44,9 +45,58 @@ class RankedMatchChallengeTest extends TestCase
             ->assertSee('Start match');
 
         $this->actingAs($member)
+            ->get(route('player.profile', $admin))
+            ->assertOk()
+            ->assertDontSee('href="'.route('matches.start', ['opponent' => $admin->id]).'"', false);
+
+        $this->actingAs($member)
             ->get(route('player.profile', $member))
             ->assertOk()
             ->assertDontSee('href="'.route('matches.start', ['opponent' => $member->id]).'"', false);
+    }
+
+    public function test_admins_cannot_be_challenged_but_can_referee(): void
+    {
+        $list = $this->singlesList();
+        $challenger = User::factory()->member()->create();
+        $opponent = User::factory()->member()->create();
+        $manager = User::factory()->manager()->create();
+        $admin = User::factory()->admin()->create(['name' => 'Admin Referee']);
+
+        $players = User::query()->activePlayers()->orderBy('name')->pluck('id');
+        $referees = User::query()->activeReferees()->orderBy('name')->pluck('id');
+
+        $this->assertTrue($players->contains($opponent->id));
+        $this->assertTrue($players->contains($manager->id));
+        $this->assertFalse($players->contains($admin->id));
+        $this->assertTrue($referees->contains($admin->id));
+
+        $this->actingAs($challenger)
+            ->get(route('matches.start', ['opponent' => $admin->id]))
+            ->assertOk()
+            ->assertSee($admin->name);
+
+        $this->actingAs($challenger)
+            ->post(route('matches.start.store'), [
+                'ranking_list_id' => $list->id,
+                'opponent_id' => $admin->id,
+                'referee_id' => $manager->id,
+            ])
+            ->assertSessionHasErrors('match');
+
+        $this->assertSame(0, MatchChallenge::count());
+
+        $this->actingAs($challenger)
+            ->post(route('matches.start.store'), [
+                'ranking_list_id' => $list->id,
+                'opponent_id' => $opponent->id,
+                'referee_id' => $admin->id,
+            ])
+            ->assertRedirect();
+
+        $challenge = MatchChallenge::first();
+        $this->assertNotNull($challenge);
+        $this->assertSame($admin->id, $challenge->referee_id);
     }
 
     public function test_singles_score_is_saved_only_after_all_three_accept(): void

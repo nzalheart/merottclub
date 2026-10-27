@@ -95,10 +95,10 @@
 
                 <div>
                     <label for="referee_id" class="block text-xs font-semibold text-muted mb-1.5">Referee</label>
-                    <p class="text-[11px] text-muted mb-1.5">Another accepted member who is not playing. They confirm the match and the score.</p>
+                    <p class="text-[11px] text-muted mb-1.5">Another accepted member who is not playing. Admins can referee. They confirm the match and the score.</p>
                     @include('matches.partials.member-select', [
                         'name' => 'referee_id',
-                        'members' => $members,
+                        'members' => $referees,
                         'elos' => $elos,
                         'selected' => old('referee_id'),
                         'exclude' => [auth()->id()],

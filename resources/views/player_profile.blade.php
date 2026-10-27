@@ -43,7 +43,7 @@
                         {{ strtoupper($user->status) }} PLAYER
                     </span>
                     @auth
-                        @if(auth()->id() !== $user->id && auth()->user()->status === 'active' && $user->status === 'active')
+                        @if(auth()->id() !== $user->id && auth()->user()->status === 'active' && $user->canBeChallenged())
                             <a href="{{ route('matches.start', ['opponent' => $user->id]) }}" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary text-white hover:opacity-90 transition">
                                 Start match
                             </a>

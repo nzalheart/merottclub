@@ -7,6 +7,7 @@ use App\Filament\Resources\MatchRecordResource\Pages;
 use App\Models\MatchRecord;
 use App\Models\PlayerRanking;
 use App\Models\RankingList;
+use App\Models\User;
 use App\Services\TableTennisScoring;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -376,18 +377,70 @@ class MatchRecordResource extends Resource
     }
 
     /**
+     * Player picks for scoring: every active member and manager, never admins.
+     *
+     * @param  list<mixed>  $excludeRankingIds
+     * @return Collection<int|string, string>
+     */
+    public static function scoreablePlayerOptions(?int $listId, array $excludeRankingIds = []): Collection
+    {
+        if (! $listId) {
+            return collect();
+        }
+
+        $list = RankingList::find($listId);
+        if (! $list) {
+            return collect();
+        }
+
+        static::ensureEligiblePlayersOnList($list);
+
+        $excludeIds = collect($excludeRankingIds)->filter()->map(fn ($id) => (int) $id)->all();
+
+        return PlayerRanking::query()
+            ->where('ranking_list_id', $list->id)
+            ->individuals()
+            ->whereHas('user', fn ($q) => $q->activePlayers())
+            ->with(['user'])
+            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('id', $excludeIds))
+            ->get()
+            ->sortBy(fn (PlayerRanking $ranking) => mb_strtolower($ranking->user?->name ?? ''))
+            ->values()
+            ->pluck('display_name', 'id');
+    }
+
+    /**
+     * Enrol every active member/manager on the list so they appear in scorekeeper selects.
+     */
+    public static function ensureEligiblePlayersOnList(RankingList $list): void
+    {
+        $userIds = User::query()
+            ->activePlayers()
+            ->pluck('id');
+
+        if ($userIds->isEmpty()) {
+            return;
+        }
+
+        $existingUserIds = PlayerRanking::query()
+            ->where('ranking_list_id', $list->id)
+            ->individuals()
+            ->whereIn('user_id', $userIds)
+            ->pluck('user_id');
+
+        foreach ($userIds->diff($existingUserIds) as $userId) {
+            PlayerRanking::findOrCreateIndividual($list, (int) $userId);
+        }
+    }
+
+    /**
      * @return Collection<int|string, string>
      */
     protected static function singlesOptions(Get $get): Collection
     {
         $listId = $get('ranking_list_id');
-        $query = PlayerRanking::query()->with(['user', 'player2']);
 
-        if ($listId) {
-            $query->where('ranking_list_id', $listId)->individuals();
-        }
-
-        return $query->get()->pluck('display_name', 'id');
+        return static::scoreablePlayerOptions($listId ? (int) $listId : null);
     }
 
     /**
@@ -397,19 +450,8 @@ class MatchRecordResource extends Resource
     protected static function individualOptions(Get $get, array $exclude = []): Collection
     {
         $listId = $get('ranking_list_id');
-        if (! $listId) {
-            return collect();
-        }
 
-        $excludeIds = collect($exclude)->filter()->map(fn ($id) => (int) $id)->all();
-
-        return PlayerRanking::query()
-            ->where('ranking_list_id', $listId)
-            ->individuals()
-            ->with(['user'])
-            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('id', $excludeIds))
-            ->get()
-            ->pluck('display_name', 'id');
+        return static::scoreablePlayerOptions($listId ? (int) $listId : null, $exclude);
     }
 
     protected static function setsToWin(Get $get): int
