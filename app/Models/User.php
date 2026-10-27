@@ -89,6 +89,15 @@ class User extends Authenticatable implements CanResetPasswordContract, Filament
         return $this->name;
     }
 
+    public function age(): ?int
+    {
+        if (! $this->date_of_birth) {
+            return null;
+        }
+
+        return $this->date_of_birth->age;
+    }
+
     public function avatarPublicUrl(): ?string
     {
         $path = $this->avatar_url;

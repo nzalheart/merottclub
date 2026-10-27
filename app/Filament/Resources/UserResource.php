@@ -122,10 +122,13 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('date_of_birth')
-                    ->date()
-                    ->sortable()
-                    ->toggleable(),
+                Tables\Columns\TextColumn::make('age')
+                    ->label('Age')
+                    ->getStateUsing(fn (User $record): ?int => $record->age())
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderBy('date_of_birth', $direction === 'asc' ? 'desc' : 'asc');
+                    })
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('gender')
                     ->formatStateUsing(fn (?string $state): string => User::GENDERS[$state] ?? '—')
                     ->toggleable(),
