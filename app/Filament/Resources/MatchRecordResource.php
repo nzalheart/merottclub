@@ -28,6 +28,8 @@ class MatchRecordResource extends Resource
 
     protected static ?string $label = 'Match & Scorekeeper';
 
+    protected static ?int $navigationSort = 10;
+
     public static function canViewAny(): bool
     {
         $user = auth()->user();
