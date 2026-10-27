@@ -34,6 +34,17 @@ class MatchRecordResource extends Resource
         return $user instanceof \App\Models\User && $user->isManager();
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with([
+            'rankingList',
+            'side1Ranking.user',
+            'side1Ranking.player2',
+            'side2Ranking.user',
+            'side2Ranking.player2',
+        ]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -213,8 +224,10 @@ class MatchRecordResource extends Resource
                     ->label('Ranking List')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('side1Ranking.display_name')
+                Tables\Columns\ViewColumn::make('side1Ranking.display_name')
                     ->label('Side 1')
+                    ->view('filament.tables.columns.ranking-name')
+                    ->viewData(['side' => 1])
                     ->searchable(),
                 Tables\Columns\TextColumn::make('side1_sets_won')
                     ->label('Sets')
@@ -222,8 +235,10 @@ class MatchRecordResource extends Resource
                 Tables\Columns\TextColumn::make('side2_sets_won')
                     ->label('Sets')
                     ->alignCenter(),
-                Tables\Columns\TextColumn::make('side2Ranking.display_name')
+                Tables\Columns\ViewColumn::make('side2Ranking.display_name')
                     ->label('Side 2')
+                    ->view('filament.tables.columns.ranking-name')
+                    ->viewData(['side' => 2])
                     ->searchable(),
                 Tables\Columns\BadgeColumn::make('winner_side')
                     ->label('Winner')
@@ -492,6 +507,7 @@ class MatchRecordResource extends Resource
                 'nickname' => null,
                 'title' => $fallback,
                 'elo' => null,
+                'avatars' => [],
             ];
         }
 
@@ -503,6 +519,7 @@ class MatchRecordResource extends Resource
                 'nickname' => null,
                 'title' => $fallback,
                 'elo' => null,
+                'avatars' => [],
             ];
         }
 
@@ -525,6 +542,7 @@ class MatchRecordResource extends Resource
                 'nickname' => null,
                 'title' => $fallback,
                 'elo' => null,
+                'avatars' => [],
             ];
         }
 
@@ -537,6 +555,7 @@ class MatchRecordResource extends Resource
                 'nickname' => null,
                 'title' => $fallback,
                 'elo' => null,
+                'avatars' => [],
             ];
         }
 
@@ -569,15 +588,23 @@ class MatchRecordResource extends Resource
             'nickname' => $nicks !== '' ? $nicks : null,
             'title' => $name,
             'elo' => $elo,
+            'avatars' => array_values(array_filter([
+                $p1->user?->avatarPayload(),
+                $p2->user?->avatarPayload(),
+            ])),
         ];
     }
 
     /**
-     * @return array{name: string, nickname: ?string, title: string, elo: ?int}
+     * @return array{name: string, nickname: ?string, title: string, elo: ?int, avatars: list<array{url: ?string, initials: string, name: string}>}
      */
     protected static function formatRankingSide(PlayerRanking $ranking, string $fallback): array
     {
         $elo = (int) $ranking->elo_rating;
+        $avatars = array_values(array_filter([
+            $ranking->user?->avatarPayload(),
+            $ranking->player2?->avatarPayload(),
+        ]));
 
         if ($ranking->team_name) {
             return [
@@ -585,6 +612,7 @@ class MatchRecordResource extends Resource
                 'nickname' => null,
                 'title' => $ranking->team_name,
                 'elo' => $elo,
+                'avatars' => $avatars,
             ];
         }
 
@@ -600,6 +628,7 @@ class MatchRecordResource extends Resource
                 'nickname' => $nicks !== '' ? $nicks : null,
                 'title' => $ranking->display_name,
                 'elo' => $elo,
+                'avatars' => $avatars,
             ];
         }
 
@@ -611,6 +640,7 @@ class MatchRecordResource extends Resource
             'nickname' => $nickname ? '@' . $nickname : null,
             'title' => $ranking->display_name,
             'elo' => $elo,
+            'avatars' => $avatars,
         ];
     }
 }

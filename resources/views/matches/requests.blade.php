@@ -19,13 +19,28 @@
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <div class="text-xs font-semibold text-secondary truncate">{{ $challenge->rankingList?->title }}</div>
-                    <div class="font-heading font-bold text-ink mt-1">
-                        {{ $challenge->sideLabel(1) }}
-                        <span class="text-muted font-semibold">vs</span>
-                        {{ $challenge->sideLabel(2) }}
+                    <div class="font-heading font-bold text-ink mt-1 space-y-1">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <x-ranking-name
+                                :users="$challenge->sidePlayers(1)->map->user->filter()"
+                                :label="$challenge->sideLabel(1)"
+                                :link="false"
+                                size="sm"
+                                class="font-heading font-bold text-ink"
+                            />
+                            <span class="text-muted font-semibold">vs</span>
+                            <x-ranking-name
+                                :users="$challenge->sidePlayers(2)->map->user->filter()"
+                                :label="$challenge->sideLabel(2)"
+                                :link="false"
+                                size="sm"
+                                class="font-heading font-bold text-ink"
+                            />
+                        </div>
                     </div>
                     <div class="text-xs text-muted mt-1">
-                        Referee: {{ $challenge->referee?->publicName() }}
+                        Referee:
+                        <x-player-name :user="$challenge->referee" :link="false" size="xs" class="text-xs text-muted font-medium" />
                     </div>
                 </div>
                 <div class="text-right shrink-0">

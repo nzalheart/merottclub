@@ -128,7 +128,7 @@
                                         {{ $r->isPair() ? 'Pair' : 'Individual' }}
                                     </span>
                                     @if($r->isPair())
-                                        <span class="text-[10px] text-muted truncate">{{ $r->display_name }}</span>
+                                        <x-ranking-name :ranking="$r" size="xs" :link="true" class="text-[10px] text-muted" />
                                     @endif
                                 </div>
                             @endif
@@ -168,7 +168,7 @@
                         $isSide1 = $m->side1Ranking?->user_id === $user->id || $m->side1Ranking?->player2_id === $user->id;
                         $userSets = $isSide1 ? $m->side1_sets_won : $m->side2_sets_won;
                         $oppSets = $isSide1 ? $m->side2_sets_won : $m->side1_sets_won;
-                        $opponentName = $isSide1 ? $m->side2Ranking?->display_name : $m->side1Ranking?->display_name;
+                        $opponentRanking = $isSide1 ? $m->side2Ranking : $m->side1Ranking;
                         $wonMatch = ($isSide1 && $m->winner_side === 1) || (!$isSide1 && $m->winner_side === 2);
                     @endphp
                     <div
@@ -181,7 +181,10 @@
                                 {{ $wonMatch ? 'W' : 'L' }}
                             </span>
                             <div class="min-w-0">
-                                <div class="text-xs font-bold text-ink truncate">vs {{ $opponentName }}</div>
+                                <div class="text-xs font-bold text-ink flex items-center gap-1.5 min-w-0">
+                                    <span class="shrink-0 text-muted">vs</span>
+                                    <x-ranking-name :ranking="$opponentRanking" size="xs" class="text-xs font-bold text-ink" />
+                                </div>
                                 <div class="text-[10px] text-muted truncate">{{ $m->rankingList?->title }}</div>
                             </div>
                         </div>

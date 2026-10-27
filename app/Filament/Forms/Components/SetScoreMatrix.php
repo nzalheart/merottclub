@@ -124,12 +124,12 @@ class SetScoreMatrix extends Field
 
     /**
      * @param  mixed  $side
-     * @return array{name: string, nickname: ?string, title: string, short_name: string, elo: ?int}
+     * @return array{name: string, nickname: ?string, title: string, short_name: string, elo: ?int, avatars: list<array{url: ?string, initials: string, name: string}>}
      */
     protected function normalizeSide(mixed $side, string $fallback): array
     {
         if (! is_array($side)) {
-            $side = ['name' => $fallback, 'nickname' => null, 'title' => $fallback, 'elo' => null];
+            $side = ['name' => $fallback, 'nickname' => null, 'title' => $fallback, 'elo' => null, 'avatars' => []];
         }
 
         $name = (string) ($side['name'] ?? $fallback);
@@ -137,6 +137,7 @@ class SetScoreMatrix extends Field
         $nickname = filled($nickname) ? (string) $nickname : null;
         $title = (string) ($side['title'] ?? $name);
         $elo = $side['elo'] ?? null;
+        $avatars = is_array($side['avatars'] ?? null) ? array_values($side['avatars']) : [];
 
         return [
             'name' => $name,
@@ -144,6 +145,7 @@ class SetScoreMatrix extends Field
             'title' => $title,
             'short_name' => Str::limit($name, 12, '...'),
             'elo' => $elo !== null ? (int) $elo : null,
+            'avatars' => $avatars,
         ];
     }
 }

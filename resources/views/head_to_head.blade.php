@@ -45,8 +45,9 @@
                 <span class="text-[10px] uppercase tracking-widest text-muted font-bold">ALL-TIME HEAD-TO-HEAD</span>
                 
                 <div class="grid grid-cols-3 items-center gap-2">
-                    <div class="min-w-0">
-                        <div class="font-heading font-extrabold text-base lg:text-lg text-ink truncate">{{ $player1->name }}</div>
+                    <div class="min-w-0 flex flex-col items-center">
+                        <x-avatar :user="$player1" size="lg" />
+                        <div class="font-heading font-extrabold text-base lg:text-lg text-ink truncate mt-2 max-w-full">{{ $player1->name }}</div>
                         @if($player1->nickname)
                             <div class="text-[10px] text-primary truncate">{{ '@' . $player1->nickname }}</div>
                         @endif
@@ -58,8 +59,9 @@
                         VS
                     </div>
 
-                    <div class="min-w-0">
-                        <div class="font-heading font-extrabold text-base lg:text-lg text-ink truncate">{{ $player2->name }}</div>
+                    <div class="min-w-0 flex flex-col items-center">
+                        <x-avatar :user="$player2" size="lg" />
+                        <div class="font-heading font-extrabold text-base lg:text-lg text-ink truncate mt-2 max-w-full">{{ $player2->name }}</div>
                         @if($player2->nickname)
                             <div class="text-[10px] text-secondary truncate">{{ '@' . $player2->nickname }}</div>
                         @endif
@@ -81,12 +83,14 @@
                             </div>
 
                             <div class="flex items-center justify-between font-heading font-bold text-sm gap-2">
-                                <span class="{{ $m->winner_side === 1 ? 'text-primary' : 'text-ink' }} truncate">
-                                    {{ $m->side1Ranking?->display_name }} ({{ $m->side1_sets_won }})
+                                <span class="{{ $m->winner_side === 1 ? 'text-primary' : 'text-ink' }} min-w-0">
+                                    <x-ranking-name :ranking="$m->side1Ranking" size="xs" class="font-heading font-bold text-sm" />
+                                    <span class="ml-1 tabular-nums">({{ $m->side1_sets_won }})</span>
                                 </span>
                                 <span class="text-xs text-muted px-2 shrink-0">ft</span>
-                                <span class="{{ $m->winner_side === 2 ? 'text-primary' : 'text-ink' }} truncate text-right">
-                                    ({{ $m->side2_sets_won }}) {{ $m->side2Ranking?->display_name }}
+                                <span class="{{ $m->winner_side === 2 ? 'text-primary' : 'text-ink' }} min-w-0 text-right">
+                                    <span class="mr-1 tabular-nums">({{ $m->side2_sets_won }})</span>
+                                    <x-ranking-name :ranking="$m->side2Ranking" size="xs" align="right" class="font-heading font-bold text-sm" />
                                 </span>
                             </div>
                         </div>

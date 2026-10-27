@@ -42,7 +42,7 @@
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <div class="text-xs uppercase tracking-wider text-muted font-semibold">You</div>
-                        <div class="font-heading font-semibold text-ink">{{ auth()->user()->publicName() }}</div>
+                        <x-player-name :user="auth()->user()" :link="false" size="sm" class="font-heading font-semibold text-ink" />
                     </div>
                     <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-secondary-soft text-secondary border border-secondary">
                         {{ strtoupper($list->type) }} · {{ strtoupper(str_replace('_', ' ', $list->format)) }}

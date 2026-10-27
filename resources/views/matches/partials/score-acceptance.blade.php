@@ -11,16 +11,15 @@
     <ul class="rounded-xl border border-theme">
         @foreach($parties as $participant)
             <li class="flex items-center justify-between gap-3 px-3 py-2 text-sm border-b border-theme last:border-b-0">
-                <div class="min-w-0">
-                    @if($linkNames)
-                        <a href="{{ route('player.profile', $participant->user_id) }}" class="font-semibold text-ink hover:text-secondary">
-                            {{ $participant->user?->publicName() }}
-                        </a>
-                    @else
-                        <span class="font-semibold text-ink">{{ $participant->user?->publicName() }}</span>
-                    @endif
+                <div class="min-w-0 flex items-center gap-2">
+                    <x-player-name
+                        :user="$participant->user"
+                        :link="$linkNames"
+                        size="sm"
+                        class="font-semibold text-ink"
+                    />
                     @if($participant->role === \App\Models\MatchChallengeParticipant::ROLE_REFEREE)
-                        <span class="ml-1 text-[10px] uppercase tracking-wider text-muted font-semibold">Referee</span>
+                        <span class="text-[10px] uppercase tracking-wider text-muted font-semibold">Referee</span>
                     @endif
                 </div>
                 @if($challenge->participantAcceptedScore($participant))

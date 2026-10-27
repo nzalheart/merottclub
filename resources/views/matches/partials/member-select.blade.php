@@ -6,6 +6,8 @@
             'id' => (int) $member->id,
             'label' => $member->publicName().(isset($elos[$member->id]) ? ' · '.$elos[$member->id].' ELO' : ' · unranked'),
             'search' => mb_strtolower($member->name.' '.$member->nickname.' '.$member->publicName()),
+            'avatar' => $member->avatarPublicUrl(),
+            'initials' => $member->initials(),
         ])
         ->values()
         ->all();
@@ -70,7 +72,15 @@
         aria-haspopup="listbox"
         :aria-controls="'{{ $name }}_list'"
     >
-        <span class="truncate" x-text="selected ? selected.label : 'Select a member'"></span>
+        <span class="flex items-center gap-2 min-w-0">
+            <template x-if="selected">
+                <span class="shrink-0">
+                    <img x-show="selected.avatar" :src="selected.avatar" alt="" class="w-6 h-6 rounded-full object-cover border border-theme bg-surface">
+                    <span x-show="! selected.avatar" class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-heading font-bold bg-secondary-soft text-secondary border border-secondary" x-text="selected.initials"></span>
+                </span>
+            </template>
+            <span class="truncate" x-text="selected ? selected.label : 'Select a member'"></span>
+        </span>
         <svg class="w-4 h-4 shrink-0 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
@@ -100,13 +110,15 @@
                 <li>
                     <button
                         type="button"
-                        class="w-full text-left px-3 py-2 text-sm text-ink hover:bg-surface transition"
+                        class="w-full text-left px-3 py-2 text-sm text-ink hover:bg-surface transition flex items-center gap-2"
                         :class="option.id === selectedId ? 'bg-secondary-soft text-secondary font-semibold' : ''"
                         @click="select(option)"
                         role="option"
                         :aria-selected="option.id === selectedId"
                     >
-                        <span x-text="option.label"></span>
+                        <img x-show="option.avatar" :src="option.avatar" alt="" class="w-6 h-6 rounded-full object-cover border border-theme bg-surface shrink-0">
+                        <span x-show="! option.avatar" class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-heading font-bold bg-secondary-soft text-secondary border border-secondary shrink-0" x-text="option.initials"></span>
+                        <span class="truncate" x-text="option.label"></span>
                     </button>
                 </li>
             </template>

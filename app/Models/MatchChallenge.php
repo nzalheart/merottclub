@@ -142,7 +142,7 @@ class MatchChallenge extends Model
     }
 
     /**
-     * @return array{name: string, nickname: ?string, title: string}
+     * @return array{name: string, nickname: ?string, title: string, avatars: list<array{url: ?string, initials: string, name: string}>}
      */
     public function sideMatrixLabel(int $side): array
     {
@@ -155,11 +155,20 @@ class MatchChallenge extends Model
             ->filter()
             ->map(fn (string $nick) => '@'.$nick)
             ->implode(' / ');
+        $avatars = $players
+            ->map(fn (MatchChallengeParticipant $participant): array => $participant->user?->avatarPayload() ?? [
+                'url' => null,
+                'initials' => '?',
+                'name' => 'Player',
+            ])
+            ->values()
+            ->all();
 
         return [
             'name' => $name !== '' ? $name : 'Side '.$side,
             'nickname' => $nickname !== '' ? $nickname : null,
             'title' => $name !== '' ? $name : 'Side '.$side,
+            'avatars' => $avatars,
         ];
     }
 

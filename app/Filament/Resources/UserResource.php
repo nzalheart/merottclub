@@ -103,7 +103,9 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\ViewColumn::make('name')
+                    ->label('Name')
+                    ->view('filament.tables.columns.player-name')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nickname')

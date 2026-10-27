@@ -89,6 +89,29 @@ class User extends Authenticatable implements CanResetPasswordContract, Filament
         return $this->name;
     }
 
+    public function initials(int $length = 1): string
+    {
+        $name = trim((string) $this->name);
+
+        if ($name === '') {
+            return '?';
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, max(1, $length)));
+    }
+
+    /**
+     * @return array{url: ?string, initials: string, name: string}
+     */
+    public function avatarPayload(): array
+    {
+        return [
+            'url' => $this->avatarPublicUrl(),
+            'initials' => $this->initials(),
+            'name' => $this->name ?: 'Player',
+        ];
+    }
+
     public function age(): ?int
     {
         if (! $this->date_of_birth) {

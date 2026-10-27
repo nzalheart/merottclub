@@ -49,9 +49,9 @@
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 text-sm">
                 <span class="text-[10px] uppercase tracking-wider text-muted font-semibold">Referee</span>
-                <a href="{{ route('player.profile', $challenge->referee_id) }}" class="ml-2 font-semibold text-ink hover:text-secondary">
-                    {{ $challenge->referee?->publicName() }}
-                </a>
+                <span class="ml-2 inline-flex">
+                    <x-player-name :user="$challenge->referee" size="sm" class="font-semibold text-ink" />
+                </span>
             </div>
             @if($challenge->isOpen())
                 <form method="POST" action="{{ route('matches.challenge.cancel', $challenge) }}" class="shrink-0" onsubmit="return confirm('Cancel this match? It will not be added to the rankings.')">

@@ -41,8 +41,8 @@
                     <div class="col-span-2 flex items-center gap-2 min-w-0">
                         <div class="w-2.5 h-2.5 shrink-0 rounded-full {{ $match->winner_side === 1 ? 'bg-primary' : 'bg-slate-300' }}"></div>
                         <div class="min-w-0">
-                            <div class="font-heading font-bold text-sm {{ $match->winner_side === 1 ? 'text-ink' : 'text-muted' }} truncate">
-                                {{ $match->side1Ranking?->display_name }}
+                            <div class="font-heading font-bold text-sm {{ $match->winner_side === 1 ? 'text-ink' : 'text-muted' }}">
+                                <x-ranking-name :ranking="$match->side1Ranking" size="sm" class="font-heading font-bold text-sm" />
                             </div>
                             <div class="text-[10px] text-muted">
                                 ELO {{ $match->side1_elo_before }} → <span class="font-bold text-primary">{{ $match->side1_elo_after }}</span>
@@ -58,8 +58,8 @@
 
                     <div class="col-span-2 text-right flex items-center justify-end gap-2 min-w-0">
                         <div class="min-w-0">
-                            <div class="font-heading font-bold text-sm {{ $match->winner_side === 2 ? 'text-ink' : 'text-muted' }} truncate">
-                                {{ $match->side2Ranking?->display_name }}
+                            <div class="font-heading font-bold text-sm {{ $match->winner_side === 2 ? 'text-ink' : 'text-muted' }}">
+                                <x-ranking-name :ranking="$match->side2Ranking" size="sm" align="right" class="font-heading font-bold text-sm" />
                             </div>
                             <div class="text-[10px] text-muted">
                                 ELO {{ $match->side2_elo_before }} → <span class="font-bold text-primary">{{ $match->side2_elo_after }}</span>

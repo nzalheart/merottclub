@@ -183,7 +183,7 @@ class PublicRankingController extends Controller
                 $query->whereHas('side1Ranking', fn ($q) => $q->where('user_id', $player2->id))
                       ->whereHas('side2Ranking', fn ($q) => $q->where('user_id', $player1->id));
             })
-            ->with(['rankingList', 'side1Ranking.user', 'side2Ranking.user', 'sets'])
+            ->with(['rankingList', 'side1Ranking.user', 'side1Ranking.player2', 'side2Ranking.user', 'side2Ranking.player2', 'sets'])
             ->orderBy('played_at', 'desc')
             ->get();
 

@@ -88,6 +88,44 @@
             justify-content: center;
             min-width: 0;
         }
+        .tt-score-matrix__identity {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            min-width: 0;
+        }
+        .tt-score-matrix__avatars {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .tt-score-matrix__avatars > * + * {
+            margin-left: -0.35rem;
+        }
+        .tt-score-matrix__avatar {
+            width: 1.125rem;
+            height: 1.125rem;
+            border-radius: 9999px;
+            object-fit: cover;
+            border: 1.5px solid #fff;
+            background: var(--color-surface);
+            flex-shrink: 0;
+        }
+        .tt-score-matrix__avatar--fallback {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5625rem;
+            font-weight: 700;
+            color: var(--color-secondary);
+            background: color-mix(in srgb, var(--color-secondary) 12%, white);
+            border-color: color-mix(in srgb, var(--color-secondary) 35%, white);
+        }
+        .tt-score-matrix__text {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
         .tt-score-matrix__name {
             display: block;
             overflow: hidden;

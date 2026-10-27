@@ -137,11 +137,16 @@
                         </span>
 
                         <div class="min-w-0">
-                            <div class="font-heading font-semibold text-sm text-ink group-hover:text-secondary transition truncate leading-tight">
-                                {{ $ranking->display_name }}
+                            <div class="font-heading font-semibold text-sm text-ink group-hover:text-secondary transition leading-tight">
+                                <x-ranking-name
+                                    :ranking="$ranking"
+                                    :link="false"
+                                    size="sm"
+                                    class="font-heading font-semibold text-sm text-ink"
+                                />
                             </div>
                             @if($isPairRow && $ranking->user && $ranking->player2)
-                                <div class="text-[10px] text-muted mt-0.5 truncate">
+                                <div class="text-[10px] text-muted mt-0.5 truncate pl-8">
                                     <a href="{{ route('player.profile', $ranking->user->id) }}" class="hover:text-secondary">{{ $ranking->user->name }}</a>
                                     &amp;
                                     <a href="{{ route('player.profile', $ranking->player2->id) }}" class="hover:text-secondary">{{ $ranking->player2->name }}</a>
