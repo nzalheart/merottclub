@@ -5,6 +5,7 @@ namespace App\Filament\Auth;
 use App\Models\User;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Facades\Filament;
+use Filament\Forms\Form;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,7 @@ class Login extends BaseLogin
 
         $data = $this->form->getState();
 
-        if (! Filament::auth()->attempt($this->getCredentialsFromFormData($data), $data['remember'] ?? false)) {
+        if (! Filament::auth()->attempt($this->getCredentialsFromFormData($data), true)) {
             $this->throwFailureValidationException();
         }
 
@@ -51,5 +52,22 @@ class Login extends BaseLogin
         }
 
         return app(LoginResponse::class);
+    }
+
+    /**
+     * @return array<int | string, string | Form>
+     */
+    protected function getForms(): array
+    {
+        return [
+            'form' => $this->form(
+                $this->makeForm()
+                    ->schema([
+                        $this->getEmailFormComponent(),
+                        $this->getPasswordFormComponent(),
+                    ])
+                    ->statePath('data'),
+            ),
+        ];
     }
 }

@@ -449,6 +449,123 @@ class RankedMatchChallengeTest extends TestCase
         );
     }
 
+    public function test_match_can_be_started_and_recorded_without_a_referee(): void
+    {
+        $list = $this->singlesList();
+        [$challenger, $opponent] = User::factory()->member()->count(2)->create();
+
+        $this->actingAs($challenger)
+            ->get(route('matches.start'))
+            ->assertOk()
+            ->assertSee('Without referee - Mutual consent')
+            ->assertSee('A referee is optional');
+
+        $this->actingAs($challenger)
+            ->post(route('matches.start.store'), [
+                'ranking_list_id' => $list->id,
+                'opponent_id' => $opponent->id,
+                'referee_id' => '',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $challenge = MatchChallenge::first();
+        $this->assertNotNull($challenge);
+        $this->assertNull($challenge->referee_id);
+        $this->assertCount(2, $challenge->participants);
+        $this->assertNull(
+            $challenge->participants()->where('role', MatchChallengeParticipant::ROLE_REFEREE)->first()
+        );
+
+        $this->actingAs($opponent)
+            ->get(route('matches.challenge', $challenge))
+            ->assertOk()
+            ->assertSee('Without referee - Mutual consent')
+            ->assertDontSee('Only the players and the referee');
+
+        $this->actingAs($challenger)
+            ->get(route('matches.requests'))
+            ->assertOk()
+            ->assertSee('Without referee - Mutual consent')
+            ->assertDontSee('Accept the score')
+            ->assertDontSee('Accept score');
+
+        $this->actingAs($challenger)
+            ->post(route('matches.challenge.scores', $challenge), $this->sets())
+            ->assertRedirect();
+
+        $this->assertSame(0, MatchRecord::count());
+
+        $this->actingAs($opponent)
+            ->get(route('matches.requests'))
+            ->assertOk()
+            ->assertSee('Accept score')
+            ->assertDontSee('Accept the score');
+
+        $this->actingAs($opponent)
+            ->post(route('matches.challenge.accept-score', $challenge), [
+                'return_to' => 'requests',
+            ])
+            ->assertRedirect(route('matches.requests'))
+            ->assertSessionHas('status');
+
+        $challenge->refresh();
+        $this->assertSame(MatchChallenge::STATUS_COMPLETED, $challenge->status);
+
+        $match = MatchRecord::first();
+        $this->assertNotNull($match);
+        $this->assertNull($match->manager_id);
+        $this->assertStringContainsString('Without referee - Mutual consent', (string) $match->notes);
+        $this->assertSame('completed', $match->status);
+    }
+
+    public function test_doubles_match_can_be_recorded_without_a_referee(): void
+    {
+        $list = RankingList::create([
+            'title' => 'Club Doubles',
+            'description' => 'Doubles',
+            'type' => 'doubles',
+            'format' => 'best_of_3',
+            'initial_elo' => 1200,
+            'k_factor' => 32,
+            'is_active' => true,
+        ]);
+
+        [$challenger, $partner, $opponent, $opponentPartner] = User::factory()->member()->count(4)->create();
+
+        $this->actingAs($challenger)
+            ->post(route('matches.start.store'), [
+                'ranking_list_id' => $list->id,
+                'partner_id' => $partner->id,
+                'opponent_id' => $opponent->id,
+                'opponent_partner_id' => $opponentPartner->id,
+            ])
+            ->assertRedirect();
+
+        $challenge = MatchChallenge::first();
+        $this->assertCount(4, $challenge->participants);
+        $this->assertNull($challenge->referee_id);
+
+        $this->actingAs($challenger)
+            ->post(route('matches.challenge.scores', $challenge), $this->sets())
+            ->assertRedirect();
+
+        foreach ([$partner, $opponent] as $user) {
+            $this->actingAs($user)
+                ->post(route('matches.challenge.accept-score', $challenge))
+                ->assertRedirect();
+        }
+
+        $this->assertSame(0, MatchRecord::count());
+
+        $this->actingAs($opponentPartner)
+            ->post(route('matches.challenge.accept-score', $challenge))
+            ->assertRedirect();
+
+        $this->assertSame(MatchChallenge::STATUS_COMPLETED, $challenge->fresh()->status);
+        $this->assertNull(MatchRecord::first()?->manager_id);
+    }
+
     protected function singlesList(): RankingList
     {
         return RankingList::create([

@@ -50,7 +50,11 @@
             <div class="min-w-0 text-sm">
                 <span class="text-[10px] uppercase tracking-wider text-muted font-semibold">Referee</span>
                 <span class="ml-2 inline-flex">
-                    <x-player-name :user="$challenge->referee" size="sm" class="font-semibold text-ink" />
+                    @if($challenge->referee)
+                        <x-player-name :user="$challenge->referee" size="sm" class="font-semibold text-ink" />
+                    @else
+                        <span class="font-semibold text-ink">{{ $challenge->refereeLabel() }}</span>
+                    @endif
                 </span>
             </div>
             @if($challenge->isOpen())
@@ -108,7 +112,7 @@
             @elseif($me && $challenge->participantAcceptedScore($me))
                 <p class="text-[11px] text-secondary font-medium">You accepted this score. If the scores change, you will need to accept again.</p>
             @elseif(! $me)
-                <p class="text-[11px] text-muted">You can enter scores. Only the players and the referee can accept them.</p>
+                <p class="text-[11px] text-muted">You can enter scores. Only the players{{ $challenge->hasReferee() ? ' and the referee' : '' }} can accept them.</p>
             @endif
 
             @if($canAcceptScore)

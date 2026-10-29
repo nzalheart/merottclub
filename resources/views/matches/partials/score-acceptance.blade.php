@@ -1,7 +1,9 @@
 @php
     $linkNames = $linkNames ?? true;
     $parties = $challenge->sidePlayers(1)->concat($challenge->sidePlayers(2));
-    $refereeParty = $challenge->participantFor((int) $challenge->referee_id);
+    $refereeParty = $challenge->referee_id
+        ? $challenge->participantFor((int) $challenge->referee_id)
+        : null;
     if ($refereeParty) {
         $parties->push($refereeParty);
     }

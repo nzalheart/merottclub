@@ -19,6 +19,8 @@ class MatchChallenge extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const WITHOUT_REFEREE_LABEL = 'Without referee - Mutual consent';
+
     protected $fillable = [
         'ranking_list_id',
         'match_type',
@@ -58,6 +60,16 @@ class MatchChallenge extends Model
     public function referee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referee_id');
+    }
+
+    public function hasReferee(): bool
+    {
+        return $this->referee_id !== null;
+    }
+
+    public function refereeLabel(): string
+    {
+        return $this->referee?->publicName() ?? self::WITHOUT_REFEREE_LABEL;
     }
 
     public function matchRecord(): BelongsTo

@@ -7,7 +7,7 @@
     <div>
         <h2 class="text-xl lg:text-2xl font-bold font-heading text-ink">Start a ranked match</h2>
         <p class="text-xs lg:text-sm text-muted mt-1">
-            Pick the opponent and a referee. The match is added to the rankings after every player and the referee accept the score.
+            Pick the opponent. A referee is optional. Without one, the match is added to the rankings after every player accepts the score.
         </p>
     </div>
 
@@ -94,14 +94,15 @@
                 @endif
 
                 <div>
-                    <label for="referee_id" class="block text-xs font-semibold text-muted mb-1.5">Referee</label>
-                    <p class="text-[11px] text-muted mb-1.5">Another accepted member who is not playing. Admins can referee. They confirm the match and the score.</p>
+                    <label for="referee_id" class="block text-xs font-semibold text-muted mb-1.5">Referee <span class="font-medium">(optional)</span></label>
+                    <p class="text-[11px] text-muted mb-1.5">The default is mutual consent, so the players confirm the score themselves. Choose a member if you want them to confirm it too. Admins can referee.</p>
                     @include('matches.partials.member-select', [
                         'name' => 'referee_id',
                         'members' => $referees,
                         'elos' => $elos,
                         'selected' => old('referee_id'),
                         'exclude' => [auth()->id()],
+                        'blankLabel' => \App\Models\MatchChallenge::WITHOUT_REFEREE_LABEL,
                     ])
                 </div>
 

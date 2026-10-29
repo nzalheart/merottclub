@@ -1,5 +1,6 @@
 @php
     $excludeIds = collect($exclude ?? [])->map(fn ($id) => (int) $id)->all();
+    $blankLabel = $blankLabel ?? null;
     $options = $members
         ->reject(fn ($member) => in_array((int) $member->id, $excludeIds, true))
         ->map(fn ($member) => [
@@ -8,10 +9,23 @@
             'search' => mb_strtolower($member->name.' '.$member->nickname.' '.$member->publicName()),
             'avatar' => $member->avatarPublicUrl(),
             'initials' => $member->initials(),
+            'blank' => false,
         ])
-        ->values()
-        ->all();
-    $selectedId = $selected !== null && $selected !== '' ? (int) $selected : null;
+        ->values();
+    if ($blankLabel) {
+        $options->prepend([
+            'id' => '',
+            'label' => $blankLabel,
+            'search' => mb_strtolower($blankLabel),
+            'avatar' => null,
+            'initials' => '',
+            'blank' => true,
+        ]);
+    }
+    $options = $options->all();
+    $selectedId = $selected !== null && $selected !== '' ? (int) $selected : ($blankLabel ? '' : null);
+    $selectedOption = collect($options)->firstWhere('id', $selectedId);
+    $selectedLabel = $selectedOption['label'] ?? 'Select a member';
 @endphp
 
 <div
@@ -19,7 +33,8 @@
     x-data="{
         open: false,
         query: '',
-        selectedId: {{ $selectedId !== null ? $selectedId : 'null' }},
+        selectedId: @js($selectedId),
+        blankId: @js($blankLabel ? '' : null),
         options: {{ \Illuminate\Support\Js::from($options) }},
         get selected() {
             return this.options.find(o => o.id === this.selectedId) || null
@@ -35,7 +50,7 @@
             this.open = false
         },
         clear() {
-            this.selectedId = null
+            this.selectedId = this.blankId
             this.query = ''
             this.open = true
             this.$nextTick(() => this.$refs.search?.focus())
@@ -54,7 +69,7 @@
         type="text"
         name="{{ $name }}"
         id="{{ $name }}"
-        required
+        @unless($blankLabel) required @endunless
         tabindex="-1"
         aria-hidden="true"
         class="sr-only absolute w-px h-px overflow-hidden opacity-0"
@@ -73,13 +88,13 @@
         :aria-controls="'{{ $name }}_list'"
     >
         <span class="flex items-center gap-2 min-w-0">
-            <template x-if="selected">
+            <template x-if="selected && ! selected.blank">
                 <span class="shrink-0">
                     <img x-show="selected.avatar" :src="selected.avatar" alt="" class="w-6 h-6 rounded-full object-cover border border-theme bg-surface">
                     <span x-show="! selected.avatar" class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-heading font-bold bg-secondary-soft text-secondary border border-secondary" x-text="selected.initials"></span>
                 </span>
             </template>
-            <span class="truncate" x-text="selected ? selected.label : 'Select a member'"></span>
+            <span class="truncate" x-text="selected ? selected.label : 'Select a member'">{{ $selectedLabel }}</span>
         </span>
         <svg class="w-4 h-4 shrink-0 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -106,7 +121,7 @@
             >
         </div>
         <ul class="max-h-56 overflow-y-auto py-1">
-            <template x-for="option in filtered" :key="option.id">
+            <template x-for="option in filtered" :key="option.blank ? 'blank' : option.id">
                 <li>
                     <button
                         type="button"
@@ -116,8 +131,8 @@
                         role="option"
                         :aria-selected="option.id === selectedId"
                     >
-                        <img x-show="option.avatar" :src="option.avatar" alt="" class="w-6 h-6 rounded-full object-cover border border-theme bg-surface shrink-0">
-                        <span x-show="! option.avatar" class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-heading font-bold bg-secondary-soft text-secondary border border-secondary shrink-0" x-text="option.initials"></span>
+                        <img x-show="! option.blank && option.avatar" :src="option.avatar" alt="" class="w-6 h-6 rounded-full object-cover border border-theme bg-surface shrink-0">
+                        <span x-show="! option.blank && ! option.avatar" class="w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-heading font-bold bg-secondary-soft text-secondary border border-secondary shrink-0" x-text="option.initials"></span>
                         <span class="truncate" x-text="option.label"></span>
                     </button>
                 </li>

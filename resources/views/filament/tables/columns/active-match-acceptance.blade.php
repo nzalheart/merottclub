@@ -2,7 +2,9 @@
     /** @var \App\Models\MatchChallenge $record */
     $record = $getRecord();
     $parties = $record->sidePlayers(1)->concat($record->sidePlayers(2));
-    $refereeParty = $record->participantFor((int) $record->referee_id);
+    $refereeParty = $record->referee_id
+        ? $record->participantFor((int) $record->referee_id)
+        : null;
     if ($refereeParty) {
         $parties->push($refereeParty);
     }

@@ -51,7 +51,7 @@ class RankedMatchController extends Controller
         $rules = [
             'ranking_list_id' => ['required', 'integer'],
             'opponent_id' => ['required', 'integer', 'exists:users,id'],
-            'referee_id' => ['required', 'integer', 'exists:users,id'],
+            'referee_id' => ['nullable', 'integer', 'exists:users,id'],
             'partner_id' => ['nullable', 'integer', 'exists:users,id'],
             'opponent_partner_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
@@ -74,14 +74,18 @@ class RankedMatchController extends Controller
                 $request->user(),
                 $list,
                 (int) $data['opponent_id'],
-                (int) $data['referee_id'],
+                isset($data['referee_id']) ? (int) $data['referee_id'] : null,
                 isset($data['partner_id']) ? (int) $data['partner_id'] : null,
                 isset($data['opponent_partner_id']) ? (int) $data['opponent_partner_id'] : null,
             );
 
+            $status = $challenge->hasReferee()
+                ? 'Match started. The opponent and the referee can see it after they refresh. Anyone can enter the scores. Updates are not live yet.'
+                : 'Match started without a referee. The players can see it after they refresh. Anyone can enter the scores. The match is recorded when every player accepts the score. Updates are not live yet.';
+
             return redirect()
                 ->route('matches.challenge', $challenge)
-                ->with('status', 'Match started. The opponent and the referee can see it after they refresh. Anyone can enter the scores. Updates are not live yet.');
+                ->with('status', $status);
         });
     }
 
@@ -150,12 +154,16 @@ class RankedMatchController extends Controller
         return $this->attempt(function () use ($request, $challenge) {
             $challenge = $this->matches->acceptScore($challenge, $request->user());
 
-            return redirect()
-                ->route('matches.challenge', $challenge)
-                ->with('status', $this->statusAfter(
-                    $challenge,
-                    'You accepted the score. It is added to the rankings only after every participant accepts. Ask the others to refresh this page.'
-                ));
+            $status = $this->statusAfter(
+                $challenge,
+                'You accepted the score. It is added to the rankings only after every participant accepts. Ask the others to refresh this page.'
+            );
+
+            $redirect = $request->input('return_to') === 'requests'
+                ? redirect()->route('matches.requests')
+                : redirect()->route('matches.challenge', $challenge);
+
+            return $redirect->with('status', $status);
         });
     }
 

@@ -19,7 +19,7 @@ class RankedMatchService
         User $challenger,
         RankingList $list,
         int $opponentId,
-        int $refereeId,
+        ?int $refereeId = null,
         ?int $partnerId = null,
         ?int $opponentPartnerId = null,
     ): MatchChallenge {
@@ -30,7 +30,9 @@ class RankedMatchService
 
             $challenger = $this->activePlayer($challenger->id, 'You need an active membership to start a match.');
             $opponent = $this->activePlayer($opponentId, 'Choose an active member or manager as the opponent.');
-            $referee = $this->activeReferee($refereeId, 'Choose an active member, manager, or admin as the referee.');
+            $referee = $refereeId
+                ? $this->activeReferee($refereeId, 'Choose an active member, manager, or admin as the referee.')
+                : null;
 
             $rows = [
                 $this->participantRow($challenger->id, MatchChallengeParticipant::ROLE_CHALLENGER, 1, true),
@@ -39,7 +41,7 @@ class RankedMatchService
 
             if ($list->type === 'doubles') {
                 if (! $partnerId || ! $opponentPartnerId) {
-                    throw new InvalidArgumentException('A doubles match needs your partner, two opponents, and a referee.');
+                    throw new InvalidArgumentException('A doubles match needs your partner and two opponents.');
                 }
 
                 $partner = $this->activePlayer($partnerId, 'Choose an active member or manager as your partner.');
@@ -49,11 +51,15 @@ class RankedMatchService
                 $rows[] = $this->participantRow($opponentPartner->id, MatchChallengeParticipant::ROLE_OPPONENT_PARTNER, 2, false);
             }
 
-            $rows[] = $this->participantRow($referee->id, MatchChallengeParticipant::ROLE_REFEREE, null, false);
+            if ($referee) {
+                $rows[] = $this->participantRow($referee->id, MatchChallengeParticipant::ROLE_REFEREE, null, false);
+            }
 
             $ids = collect($rows)->pluck('user_id');
             if ($ids->unique()->count() !== $ids->count()) {
-                throw new InvalidArgumentException('The players and the referee must all be different members.');
+                throw new InvalidArgumentException($referee
+                    ? 'The players and the referee must all be different members.'
+                    : 'The players must all be different members.');
             }
 
             $this->guardAgainstDuplicate($list, collect($rows)
@@ -65,7 +71,7 @@ class RankedMatchService
                 'ranking_list_id' => $list->id,
                 'match_type' => $list->type,
                 'initiated_by' => $challenger->id,
-                'referee_id' => $referee->id,
+                'referee_id' => $referee?->id,
                 'status' => MatchChallenge::STATUS_OPEN,
             ]);
 
@@ -214,7 +220,9 @@ class RankedMatchService
             'manager_id' => $locked->referee_id,
             'status' => 'in_progress',
             'played_at' => now(),
-            'notes' => 'Member challenge. Referee: '.($referee?->publicName() ?? 'referee').'.',
+            'notes' => $referee
+                ? 'Member challenge. Referee: '.$referee->publicName().'.'
+                : 'Member challenge. '.MatchChallenge::WITHOUT_REFEREE_LABEL.'.',
         ]);
 
         foreach (array_values($locked->scores ?? []) as $index => $set) {
@@ -361,7 +369,9 @@ class RankedMatchService
         $participant = $challenge->participants->firstWhere('user_id', $user->id);
 
         if (! $participant) {
-            throw new AuthorizationException('Only the players and the referee can accept this match.');
+            throw new AuthorizationException($challenge->hasReferee()
+                ? 'Only the players and the referee can accept this match.'
+                : 'Only the players can accept this match.');
         }
 
         return $participant;
