@@ -292,7 +292,7 @@ class RankedMatchChallengeTest extends TestCase
             ->assertSee($opponent->name);
     }
 
-    public function test_referee_must_be_a_different_active_member_and_duplicates_are_blocked(): void
+    public function test_referee_must_be_a_different_active_member_and_multiple_open_matches_are_allowed(): void
     {
         $list = $this->singlesList();
         $challenger = User::factory()->member()->create();
@@ -332,9 +332,10 @@ class RankedMatchChallengeTest extends TestCase
                 'opponent_id' => $opponent->id,
                 'referee_id' => $referee->id,
             ])
-            ->assertSessionHasErrors('match');
+            ->assertRedirect();
 
-        $this->assertSame(1, MatchChallenge::count());
+        $this->assertSame(2, MatchChallenge::count());
+        $this->assertSame(2, MatchChallenge::query()->where('status', MatchChallenge::STATUS_OPEN)->count());
     }
 
     public function test_decline_and_cancel_keep_the_score_out_of_the_rankings(): void

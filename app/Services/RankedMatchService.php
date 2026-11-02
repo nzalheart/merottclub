@@ -62,11 +62,6 @@ class RankedMatchService
                     : 'The players must all be different members.');
             }
 
-            $this->guardAgainstDuplicate($list, collect($rows)
-                ->whereNotNull('side')
-                ->pluck('user_id')
-                ->all());
-
             $challenge = MatchChallenge::create([
                 'ranking_list_id' => $list->id,
                 'match_type' => $list->type,
@@ -248,34 +243,6 @@ class RankedMatchService
         ]);
 
         return $locked->fresh(['participants.user', 'rankingList', 'referee', 'matchRecord']);
-    }
-
-    /**
-     * @param  list<int>  $playerIds
-     */
-    protected function guardAgainstDuplicate(RankingList $list, array $playerIds): void
-    {
-        $wanted = collect($playerIds)->map(fn ($id) => (int) $id)->sort()->values()->all();
-
-        $open = MatchChallenge::query()
-            ->where('ranking_list_id', $list->id)
-            ->where('status', MatchChallenge::STATUS_OPEN)
-            ->with('participants')
-            ->get();
-
-        foreach ($open as $challenge) {
-            $existing = $challenge->participants
-                ->whereNotNull('side')
-                ->pluck('user_id')
-                ->map(fn ($id) => (int) $id)
-                ->sort()
-                ->values()
-                ->all();
-
-            if ($existing === $wanted) {
-                throw new InvalidArgumentException('These players already have an open match on this list.');
-            }
-        }
     }
 
     /**
