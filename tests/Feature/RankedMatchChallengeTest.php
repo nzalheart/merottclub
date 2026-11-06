@@ -290,6 +290,20 @@ class RankedMatchChallengeTest extends TestCase
             ->assertOk()
             ->assertSee($challenger->name)
             ->assertSee($opponent->name);
+
+        $gain = $match->side1_elo_after - $match->side1_elo_before;
+        $loss = $match->side2_elo_after - $match->side2_elo_before;
+
+        $this->get(route('player.profile', $challenger))
+            ->assertOk()
+            ->assertSee('11-3', false)
+            ->assertSee('11-4', false)
+            ->assertSee(($gain > 0 ? '+' : '').$gain, false);
+
+        $this->get(route('player.profile', $opponent))
+            ->assertOk()
+            ->assertSee('11-3', false)
+            ->assertSee(($loss > 0 ? '+' : '').$loss, false);
     }
 
     public function test_referee_must_be_a_different_active_member_and_multiple_open_matches_are_allowed(): void

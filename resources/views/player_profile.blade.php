@@ -170,33 +170,54 @@
                         $oppSets = $isSide1 ? $m->side2_sets_won : $m->side1_sets_won;
                         $opponentRanking = $isSide1 ? $m->side2Ranking : $m->side1Ranking;
                         $wonMatch = ($isSide1 && $m->winner_side === 1) || (!$isSide1 && $m->winner_side === 2);
+                        $eloBefore = $isSide1 ? $m->side1_elo_before : $m->side2_elo_before;
+                        $eloAfter = $isSide1 ? $m->side1_elo_after : $m->side2_elo_after;
+                        $eloDelta = ($eloBefore !== null && $eloAfter !== null) ? $eloAfter - $eloBefore : null;
                     @endphp
                     <div
-                        class="surface-card rounded-xl p-3 flex items-center justify-between gap-3"
+                        class="surface-card rounded-xl p-3 space-y-2"
                         x-show="selectedListId === null || selectedListId === {{ $m->ranking_list_id }}"
                         x-cloak
                     >
-                        <div class="flex items-center gap-3 min-w-0">
-                            <span class="w-7 h-7 shrink-0 rounded-lg font-heading font-bold text-xs flex items-center justify-center {{ $wonMatch ? 'bg-primary-soft text-primary border border-primary' : 'bg-surface text-muted border border-theme' }}">
-                                {{ $wonMatch ? 'W' : 'L' }}
-                            </span>
-                            <div class="min-w-0">
-                                <div class="text-xs font-bold text-ink flex items-center gap-1.5 min-w-0">
-                                    <span class="shrink-0 text-muted">vs</span>
-                                    <x-ranking-name :ranking="$opponentRanking" size="xs" class="text-xs font-bold text-ink" />
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-7 h-7 shrink-0 rounded-lg font-heading font-bold text-xs flex items-center justify-center {{ $wonMatch ? 'bg-primary-soft text-primary border border-primary' : 'bg-surface text-muted border border-theme' }}">
+                                    {{ $wonMatch ? 'W' : 'L' }}
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-ink flex items-center gap-1.5 min-w-0">
+                                        <span class="shrink-0 text-muted">vs</span>
+                                        <x-ranking-name :ranking="$opponentRanking" size="xs" class="text-xs font-bold text-ink" />
+                                    </div>
+                                    <div class="text-[10px] text-muted truncate">{{ $m->rankingList?->title }}</div>
                                 </div>
-                                <div class="text-[10px] text-muted truncate">{{ $m->rankingList?->title }}</div>
+                            </div>
+
+                            <div class="text-right shrink-0">
+                                <div class="font-mono text-sm font-bold {{ $wonMatch ? 'text-primary' : 'text-ink' }}">
+                                    {{ $userSets }} - {{ $oppSets }}
+                                </div>
+                                @if($eloDelta !== null)
+                                    <div class="text-[11px] font-bold font-mono {{ $eloDelta > 0 ? 'text-primary' : ($eloDelta < 0 ? 'text-secondary' : 'text-muted') }}" title="Ranking points from this match">
+                                        {{ $eloDelta > 0 ? '+' : '' }}{{ $eloDelta }}
+                                    </div>
+                                @endif
+                                <div class="text-[10px] text-muted">
+                                    {{ $m->played_at ? $m->played_at->format('M d') : '' }}
+                                </div>
                             </div>
                         </div>
 
-                        <div class="text-right shrink-0">
-                            <div class="font-mono text-sm font-bold {{ $wonMatch ? 'text-primary' : 'text-ink' }}">
-                                {{ $userSets }} - {{ $oppSets }}
+                        @if($m->sets->isNotEmpty())
+                            <div class="flex items-center gap-1.5 flex-wrap pl-10">
+                                <span class="text-[10px] uppercase tracking-wider text-muted font-semibold">Sets:</span>
+                                @foreach($m->sets as $set)
+                                    <span class="px-2 py-0.5 rounded-lg text-xs font-mono font-medium bg-surface text-ink border border-theme">
+                                        {{ $set->side1_score }}-{{ $set->side2_score }}
+                                    </span>
+                                @endforeach
                             </div>
-                            <div class="text-[10px] text-muted">
-                                {{ $m->played_at ? $m->played_at->format('M d') : '' }}
-                            </div>
-                        </div>
+                        @endif
                     </div>
                 @empty
                     <div class="surface-card rounded-xl p-4 text-center text-xs text-muted">
