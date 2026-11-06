@@ -7,7 +7,7 @@
     <div>
         <h2 class="text-xl lg:text-2xl font-bold font-heading text-ink">Start a ranked match</h2>
         <p class="text-xs lg:text-sm text-muted mt-1">
-            Pick the opponent. A referee is optional. Without one, the match is added to the rankings after every player accepts the score.
+            Pick the opponent. A referee is optional. The match is added after one player from each side accepts the score. If you choose a referee, they must accept too.
         </p>
     </div>
 

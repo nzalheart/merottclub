@@ -26,6 +26,8 @@
                 </div>
                 @if($challenge->participantAcceptedScore($participant))
                     <span class="shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-secondary-soft text-secondary border border-secondary">Score accepted</span>
+                @elseif($challenge->sideHasAcceptedScore($participant->side))
+                    <span class="shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-surface text-muted border border-theme">Teammate accepted</span>
                 @else
                     <span class="shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-primary-soft text-primary border border-primary">Pending</span>
                 @endif

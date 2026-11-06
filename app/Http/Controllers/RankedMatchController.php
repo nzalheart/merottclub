@@ -81,7 +81,7 @@ class RankedMatchController extends Controller
 
             $status = $challenge->hasReferee()
                 ? 'Match started. The opponent and the referee can see it after they refresh. Anyone can enter the scores. Updates are not live yet.'
-                : 'Match started without a referee. The players can see it after they refresh. Anyone can enter the scores. The match is recorded when every player accepts the score. Updates are not live yet.';
+                : 'Match started without a referee. The players can see it after they refresh. Anyone can enter the scores. The match is recorded when one player from each side accepts the score. Updates are not live yet.';
 
             return redirect()
                 ->route('matches.challenge', $challenge)
@@ -138,7 +138,7 @@ class RankedMatchController extends Controller
             if ($challenge->status === MatchChallenge::STATUS_COMPLETED) {
                 $message = 'Everyone accepted the score. The match is now on the rankings.';
             } elseif ($accepting) {
-                $message = 'You accepted the score. It is added to the rankings only after every participant accepts. Ask the others to refresh this page.';
+                $message = 'You accepted the score. It is added after one player from each side accepts, and the referee too if there is one. Ask the others to refresh this page.';
             } else {
                 $message = 'Scores saved. Changing them clears previous score acceptances. Ask the others to refresh this page.';
             }
@@ -156,7 +156,7 @@ class RankedMatchController extends Controller
 
             $status = $this->statusAfter(
                 $challenge,
-                'You accepted the score. It is added to the rankings only after every participant accepts. Ask the others to refresh this page.'
+                'You accepted the score. It is added after one player from each side accepts, and the referee too if there is one. Ask the others to refresh this page.'
             );
 
             $redirect = $request->input('return_to') === 'requests'

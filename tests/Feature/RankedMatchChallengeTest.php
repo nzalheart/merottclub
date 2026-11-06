@@ -125,6 +125,7 @@ class RankedMatchChallengeTest extends TestCase
             ->get(route('matches.requests'))
             ->assertOk()
             ->assertSee($opponent->name)
+            ->assertSee('Start match')
             ->assertDontSee('No scores yet');
 
         $this->actingAs($opponent)
@@ -390,7 +391,7 @@ class RankedMatchChallengeTest extends TestCase
         $this->assertSame(0, MatchRecord::count());
     }
 
-    public function test_doubles_match_requires_every_player_and_the_referee(): void
+    public function test_doubles_score_needs_one_player_from_each_side_and_the_referee(): void
     {
         $list = RankingList::create([
             'title' => 'Club Doubles',
@@ -439,16 +440,21 @@ class RankedMatchChallengeTest extends TestCase
         $this->assertNotNull(
             $challenge->participants()->where('user_id', $referee->id)->first()->accepted_score_at
         );
+        $this->assertSame(0, MatchRecord::count());
 
-        foreach ([$challenger, $partner, $opponent] as $user) {
-            $this->actingAs($user)
-                ->post(route('matches.challenge.accept-score', $challenge))
-                ->assertRedirect();
-        }
+        $this->actingAs($challenger)
+            ->post(route('matches.challenge.accept-score', $challenge))
+            ->assertRedirect();
 
         $this->assertSame(0, MatchRecord::count());
 
-        $this->actingAs($opponentPartner)
+        $this->actingAs($partner)
+            ->get(route('matches.requests'))
+            ->assertOk()
+            ->assertDontSee('Accept score')
+            ->assertSee('Teammate accepted');
+
+        $this->actingAs($opponent)
             ->post(route('matches.challenge.accept-score', $challenge))
             ->assertRedirect();
 
@@ -456,11 +462,8 @@ class RankedMatchChallengeTest extends TestCase
         $this->assertSame(1, MatchRecord::count());
         $this->assertSame(4, PlayerRanking::query()->individuals()->count());
         $this->assertSame(2, PlayerRanking::query()->pairs()->count());
-        $this->assertSame(
-            5,
-            MatchChallengeParticipant::where('match_challenge_id', $challenge->id)
-                ->whereNotNull('accepted_score_at')
-                ->count()
+        $this->assertNull(
+            $challenge->participants()->where('user_id', $opponentPartner->id)->first()->accepted_score_at
         );
     }
 
@@ -565,20 +568,23 @@ class RankedMatchChallengeTest extends TestCase
             ->post(route('matches.challenge.scores', $challenge), $this->sets())
             ->assertRedirect();
 
-        foreach ([$partner, $opponent] as $user) {
-            $this->actingAs($user)
-                ->post(route('matches.challenge.accept-score', $challenge))
-                ->assertRedirect();
-        }
-
         $this->assertSame(0, MatchRecord::count());
 
-        $this->actingAs($opponentPartner)
+        $this->actingAs($partner)
+            ->get(route('matches.challenge', $challenge))
+            ->assertOk()
+            ->assertDontSee('Accept score')
+            ->assertSee('Teammate accepted');
+
+        $this->actingAs($opponent)
             ->post(route('matches.challenge.accept-score', $challenge))
             ->assertRedirect();
 
         $this->assertSame(MatchChallenge::STATUS_COMPLETED, $challenge->fresh()->status);
         $this->assertNull(MatchRecord::first()?->manager_id);
+        $this->assertNull(
+            $challenge->participants()->where('user_id', $opponentPartner->id)->first()->accepted_score_at
+        );
     }
 
     protected function singlesList(): RankingList

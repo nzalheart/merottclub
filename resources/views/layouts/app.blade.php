@@ -233,7 +233,7 @@
             </main>
 
             <!-- Mobile App Fixed Bottom Dock -->
-            <nav class="fixed bottom-0 z-40 w-full max-w-md dock-bar px-3 py-2 flex items-center justify-around lg:hidden left-1/2 -translate-x-1/2">
+            <nav class="fixed bottom-0 z-40 w-full max-w-md dock-bar px-2 py-2 flex items-center justify-around lg:hidden left-1/2 -translate-x-1/2">
                 <a href="{{ route('leaderboard') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('leaderboard') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     <span>Rankings</span>
@@ -242,6 +242,14 @@
                 <a href="{{ route('matches') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('matches') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span>Scores</span>
+                </a>
+
+                <a href="{{ route('matches.requests') }}" class="relative flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('matches.requests', 'matches.challenge', 'matches.start') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    @if(($openMatchCount ?? 0) > 0)
+                        <span class="absolute top-1 right-1 min-w-[1.05rem] h-[1.05rem] px-1 rounded-full bg-primary text-white text-[10px] font-bold leading-none inline-flex items-center justify-center">{{ $openMatchCount }}</span>
+                    @endif
+                    <span>Matches</span>
                 </a>
 
                 <a href="{{ route('head-to-head') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition {{ request()->routeIs('head-to-head') ? 'text-secondary font-semibold' : 'text-muted hover:text-ink' }}">

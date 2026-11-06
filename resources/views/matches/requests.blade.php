@@ -4,11 +4,16 @@
 
 @section('content')
 <div class="space-y-4 lg:space-y-6 max-w-3xl">
-    <div>
-        <h2 class="text-xl lg:text-2xl font-bold font-heading text-ink">Match requests</h2>
-        <p class="text-xs lg:text-sm text-muted mt-1">
-            A match shows here as soon as it starts. Refresh to see a new one — updates are not live.
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+            <h2 class="text-xl lg:text-2xl font-bold font-heading text-ink">Match requests</h2>
+            <p class="text-xs lg:text-sm text-muted mt-1">
+                A match shows here as soon as it starts. Refresh to see a new one — updates are not live.
+            </p>
+        </div>
+        <a href="{{ route('matches.start') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:opacity-90 transition shrink-0">
+            Start match
+        </a>
     </div>
 
     @forelse($challenges as $challenge)
@@ -71,7 +76,7 @@
                     </div>
                 @endif
             </a>
-            @if($me && $challenge->hasValidScores() && ! $challenge->participantAcceptedScore($me))
+            @if($challenge->needsActionFrom((int) auth()->id()))
                 <form method="POST" action="{{ route('matches.challenge.accept-score', $challenge) }}" class="px-4 pb-4 lg:px-5 lg:pb-5">
                     @csrf
                     <input type="hidden" name="return_to" value="requests">

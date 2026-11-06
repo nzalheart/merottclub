@@ -12,7 +12,7 @@
     $setsToWin = $list?->getMaxSetsToWin() ?? 2;
     $sideOne = $challenge->sideMatrixLabel(1);
     $sideTwo = $challenge->sideMatrixLabel(2);
-    $canAcceptScore = $me && $validScores && ! $challenge->participantAcceptedScore($me);
+    $canAcceptScore = $me && $challenge->needsActionFrom((int) auth()->id());
 @endphp
 
 <div class="space-y-4 lg:space-y-6">

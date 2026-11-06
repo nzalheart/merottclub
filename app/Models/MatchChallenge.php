@@ -267,10 +267,36 @@ class MatchChallenge extends Model
         return $this->hasValidScores() && $this->wasLastEditedBy((int) $participant->user_id);
     }
 
+    public function sideHasAcceptedScore(?int $side): bool
+    {
+        if ($side === null) {
+            return false;
+        }
+
+        return $this->participants
+            ->where('side', $side)
+            ->contains(fn (MatchChallengeParticipant $participant) => $this->participantAcceptedScore($participant));
+    }
+
     public function allAcceptedScore(): bool
     {
-        return $this->participants->isNotEmpty()
-            && $this->participants->every(fn (MatchChallengeParticipant $participant) => $this->participantAcceptedScore($participant));
+        $sides = $this->participants->filter(fn (MatchChallengeParticipant $participant) => $participant->side !== null)->groupBy('side');
+
+        if ($sides->count() < 2) {
+            return false;
+        }
+
+        $eachSideAccepted = $sides->every(
+            fn ($players) => $players->contains(fn (MatchChallengeParticipant $participant) => $this->participantAcceptedScore($participant))
+        );
+
+        if (! $eachSideAccepted) {
+            return false;
+        }
+
+        return $this->participants
+            ->where('role', MatchChallengeParticipant::ROLE_REFEREE)
+            ->every(fn (MatchChallengeParticipant $participant) => $this->participantAcceptedScore($participant));
     }
 
     public function readyToFinalize(): bool
@@ -298,7 +324,15 @@ class MatchChallenge extends Model
             return false;
         }
 
-        return $this->hasValidScores() && ! $this->participantAcceptedScore($participant);
+        if (! $this->hasValidScores() || $this->participantAcceptedScore($participant)) {
+            return false;
+        }
+
+        if ($participant->role === MatchChallengeParticipant::ROLE_REFEREE) {
+            return true;
+        }
+
+        return ! $this->sideHasAcceptedScore($participant->side);
     }
 
     protected function openPhaseLabel(): string
